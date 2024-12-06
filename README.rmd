@@ -13,7 +13,7 @@ Economic Exclusion Zones (EEZ) along the West Coast of the US that are
 potentially suitable locations for integrative multi-trophic aquaculture
 (IMTA).
 
-# Techniques 
+# Techniques
 
 This repository highlights a variety of skills and techniques including:
 
