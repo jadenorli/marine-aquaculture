@@ -1,0 +1,1741 @@
+---
+title: "Sustainable Growth: Exploring Integrative Multi-Trophic Aquaculture on the West Coast"
+subtitle: '<span style="font-size: 30px; text-align: center; display: block;">Prioritizing Potential Finfish Species</span>'
+author: "Jaden Orli"
+date: last-modified
+bibliography: 
+ - ../bibs/references.bib
+ - ../bibs/packages.bib
+nocite: |
+  @tidyverse, @tmap, @here, @janitor, @knitr, @stringr, @tibble, @kableExtra, @calecopal, @htmltools
+execute: 
+  eval: true
+format:
+  html: 
+    theme: minty
+    css: custom.css
+    toc: true
+    toc-title: "Table of Contents"
+    output-dir: ../
+editor_options: 
+  chunk_output_type: inline
+embed-resources: true
+---
+
+
+# I. Background
+
+## a) Motivation
+
+With the U.N. predicting that the global human population will reach approximately 9.7 billion people by the year 2050, access to basic resources (particularly food and water) will continue to become increasing pressing issues [@un_population2024]. The global assessment of the state of food security and nutrition in 2022 highlights the severity of this issue at current population levels (~8.2 billion): 
+
+  "It is estimated that between 691 and 783 million people in the world faced hunger in 2022. Considering the midrange (about 735 million), 122 million more people faced hunger in 2022 than in 2019, before the pandemic [@fao_food_security2023]."
+
+This highlights the increasingly urgent need to address the lack of global food security. As a result, marine aquaculture has become the center of research; with many notable characteristics that make it a sustainable alternative to meet the growing demands for protein sources [@hall2011; @nash2021]. Gentry et al. mapped potential locations that would be suitable for marine aquaculture around the world, and they found that global seafood demand could be met using less than 0.015% of the global ocean area [@gentry2017]. Additionally, an analysis of systems that have adopted an integrated multi-trophic aquaculture (IMTA) model show promise as a sustainable approach to open-ocean marine aquaculture [@troell2009]. 
+
+Gentry et al. identified potential locations based on human and environmental constraints. This included excluding areas; that would negatively impact the growth of bivalves (low phytoplanktonic food availability) and finfish (low dissolve oxygen),  were too expensive (too deep >200m) to anchor farms, were already allocated to other uses, or were in high-density shipping areas [@gentry2017].
+
+Based on this analysis, we aim to identify locations along the west coast of the U.S. that would be optimal for the establishment of a marine aquaculture farm for both oysters and various finfish species based on two environmental parameters that impact optimal growth:
+
+  1. range of thermal tolerance 
+  2. habitat range (based on depth)
+
+## b) Oysters 
+
+Research has shown that the following conditions are required for optimal oyster growth:
+
+  1. sea surface temperature: 11-30°C
+  2. depth: 0-70 meters below sea level
+
+## c) Potential Finfish Species {#potential_finfish_species}
+
+Potential finfish species were selected based on the current commercial fishes managed by the NOAA West Coast operation [@noaa_west_coast]. Highly migratory species (such as sharks) were removed from consideration resulting in a list of 26 [potential finfish species](#load_species). We then used FishBase to compile a table of minimum temperature, maximum temperature, minimum depth, and maximum depth for each species [@fishbase2024]. If a temperature range was not explicity listed, the preferred minimum temperature and preferred maximum temperature (estimated from a model) were recorded [@froese2020]. 
+
+
+## d) Workflow
+
+The first goal of this assessment, is to determine locations within the US west coast [Economic Exclusion Zones (EEZ)](#oyster_aquaculture) that would be suitable for oyster cultivation. Then a [generalizable workflow](#finfish_aquaculture) was developed to assess the suitability of the 26 potential finfish species previously identified. Finally, the [results](#results) of the analysis are provided.
+
+# II. Load Libraries 
+---
+
+First, load the necessary packages for this analysis: 
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+#| results: false
+
+#this clears out the environment
+rm(list = ls())
+
+#load necessary data packages
+library(terra)
+library(sf)
+library(tidyverse)
+library(tmap)
+library(here)
+library(janitor)
+library(knitr)
+library(stringr)
+library(tibble)
+library(kableExtra)
+library(htmltools)
+library(calecopal)
+
+```
+
+
+# III. Define Functions {#define_functions}
+---
+
+All functions used in this workflow are outlined and defined in this [section](#define_functions), and grouped into three subcategories:
+
+  - [a) Data Processing](#data_processing),
+  - [b) Visualization](#visualization), and
+  - [c) Analysis](#analysis).
+
+## a) Data Processing {#data_processing}
+
+### i) Identify Spatial Properties {#spatial_properties}
+
+This function can be used to create a tibble with all of the geometric properties (resolution, extent, origin, and coordiante reference system) for a list of spatial objects with the class "SpatRaster" or "sf object" (both terra and sf compatible). This is useful for comparing the spatial properties of the spatial objects in a workflow to ensure compatibility before processing begins. 
+
+The input is:
+
+  - spatial_file_list: a list of spatial objects
+ 
+The output is:
+
+  - spatial_properties: a tibble with a column for the name of the spatial object, the resolution, extent, origin, and coordinate reference system (crs)
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#write a function to create a tibble with all the spatial properties for a list of spatial objects
+extract_spatial_properties <- function(spatial_file_list) {
+  
+  #create an empty tibble to hold the output
+  spatial_properties <- tibble(name = character(),
+                               resolution = character(),
+                               extent = character(),
+                               origin = character(),
+                               crs = character())
+  
+  #write a for loop to extract the properties into the tibble for review
+  for (file_name in names(spatial_file_list)) {
+    
+    #extract the current spatial object
+    obj <- spatial_file_list[[file_name]]
+    
+    #since we have sf objects and SpatRasters, we must handle them differently:
+  
+    ##if the object is a SpatRaster
+    if (inherits(obj, "SpatRaster")){
+      
+      #if the object is a raster stack (has more than one layer):
+      if (nlyr(obj) > 1) {
+        
+        ##for each layer of the raster stack
+        for (layer_name in names(obj)) {
+          
+          #extract the layer
+          layer <- obj[[layer_name]] 
+        
+          #extract the spatial properties for this layer:
+        
+          ##extract the resolution (cell size) as a string with 5 decimals
+          resolution <- paste(round(res(obj), 5), collapse = ", ")
+        
+          ##extract the extent (raster size) as a string with 2 decimals
+          extent <- paste(round(ext(obj), 2), collapse = ", ")
+        
+          ##extract the origin (0,0) as a string with 7 decimals
+          origin <- paste(round(origin(obj), 7), collapse = ", ") 
+    
+          ##extract the crs from the current object
+          crs <- terra::crs(obj)
+    
+          #extract the EPSG ID part from the CRS string to make the CRS easier to read
+          crs_id <- sub('.*ID\\["EPSG",(\\d+)\\].*', 'EPSG:\\1', as.character(crs))
+    
+          #add the new information to the tibble for raster properties
+          spatial_properties <- spatial_properties %>%
+            add_row(name = layer_name,
+                    resolution = resolution,
+                    extent = extent,
+                    origin = origin,
+                    crs = crs_id)
+          }
+        
+        #if the object is a single raster:  
+        } else {
+          
+          #extract the spatial properties for this layer:
+          
+          ##extract the resolution (cell size) as a string with 5 decimals
+          resolution <- paste(round(res(obj), 5), collapse = ", ")
+    
+          ##extract the extent (raster size) as a string with 2 decimals
+          extent <- paste(round(ext(obj), 2), collapse = ", ")
+       
+          ##extract the origin (0,0) as a string with 7 decimals
+          origin <- paste(round(origin(obj), 7), collapse = ", ") 
+    
+          ##extract the crs from the current object
+          crs <- terra::crs(obj)
+    
+          #extract the EPSG ID part from the CRS string to make the CRS easier to read
+          crs_id <- sub('.*ID\\["EPSG",(\\d+)\\].*', 'EPSG:\\1', as.character(crs))
+    
+          #add the new information to the tibble for raster properties
+          spatial_properties <- spatial_properties %>%
+            add_row(name = file_name,
+                    resolution = resolution,
+                    extent = extent,
+                    origin = origin,
+                    crs = crs_id)
+          }
+      
+      ##if the object is a sf object  
+      } else if (inherits(obj, "sf")) {
+        
+        #extract the spatial properties for this layer:
+    
+        ##extract the EPSG ID part from the CRS string to make the CRS easier to read
+        crs_id <- gsub('.*ID\\[\\\"(EPSG)\\\",(\\d+)\\].*', '\\1:\\2', as.character(crs)) 
+    
+        #add the new information to the tibble for raster properties
+        spatial_properties <- spatial_properties %>%
+          add_row(name = file_name,
+                  resolution = NA,
+                  extent = NA,
+                  origin = NA,
+                  crs = crs_id)
+      }
+  }
+  
+  #return the tibble with the extracted spatial properties
+  return(spatial_properties)
+}
+
+```
+
+
+### ii) Check CRS {#check_crs}
+
+This function can be used to verify that all the spatial objects in a list (both terra and sf compatible) have a pre-defined coordinate reference system (crs). This is necessary to ensure before any map algebra can be performed. 
+
+The input is:
+
+  - obj: a list of spatial objects
+  - target_crs: a target crs that all the spatial objects in the list are compared against
+ 
+The output is:
+
+  - a logical (TRUE/FALSE) if the coordinate reference system of the object matches the target crs
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#write a function to verify that all the spatial objects have the same crs
+check_crs <- function(obj, target_crs) {
+  
+  #if the object is a "SpatRaster"
+  if (inherits(obj, "SpatRaster")) {
+    
+    #returns a logical (TRUE/FALSE) if the crs matches the target_crs (TRUE) or not (FALSE)
+    return(terra::crs(obj) == target_crs)  
+  
+  #if the object is an "sf object"    
+  } else if (inherits(obj, "sf")) {
+    
+    #returns a logical (TRUE/FALSE) if the crs matches the target_crs (TRUE) or not (FALSE)
+    return(st_crs(obj)$wkt == target_crs) ##need to use wkt since terra and sf print crs differently
+    
+  } 
+}
+
+```
+
+
+### iii) Check Spatial Properties {#check_spatial}
+
+This function can be used to check that the geometric properties (resolution, extent, origin, and crs) of two SpatRaster objects (only compatible with terra) match. This function is a modified version of the [extract_spatial_properties](#extract_spatial_properties) function. 
+
+The input is:
+
+  - spatial_file_list: a list of spatial objects
+ 
+The output is:
+
+  - spatial_properties: a tibble with a column for the name of the spatial object, the resolution, extent, origin, and coordinate reference system (crs) and each entry will say "MATCH" or "DOES NOT MATCH"
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#write a modified version of the extract_spatial_properties function to check the spatial properties 
+##this is only compatible with raster objects (not sf objects)
+check_spatial_properties <- function(spatial_file_list) {
+  
+  #create an empty tibble to hold the output
+  spatial_properties <- tibble(name = character(),
+                               resolution_match = character(),
+                               extent_match = character(),
+                               origin_match = character(),
+                               crs_match = character())
+  
+  #we will use the first file in the list as the reference object for verification
+  ref_obj <- spatial_file_list[[1]]
+  
+  #now identify the spatial properties of the first object
+  
+  ##identify the reference resolution
+  ref_resolution <- paste(res(ref_obj), collapse = ", ")
+
+  ##identify the reference extent
+  ref_extent <- paste(ext(ref_obj), collapse = ", ")
+  
+  ##identify the reference origin
+  ref_origin <- paste(origin(ref_obj), collapse = ", ")
+  
+  ##identify the reference crs
+  ref_crs <- terra::crs(ref_obj)
+  
+  #write a for loop to extract the properties into the tibble for review
+  for (file_name in names(spatial_file_list)) {
+    
+    #extract the current spatial object
+    rast_obj <- spatial_file_list[[file_name]]
+    
+    #if the object is a raster stack (has more than one layer):
+      if (nlyr(rast_obj) > 1) {
+        
+        ##for each layer of the raster stack
+        for (layer_name in names(rast_obj)) {
+          
+          #extract the layer
+          layer <- rast_obj[[layer_name]] 
+        
+          #extract the spatial properties for this layer:
+        
+          ##extract the resolution (cell size) as a string
+          resolution <- paste(res(rast_obj), collapse = ", ")
+        
+          ##extract the extent (raster size) as a string 
+          extent <- paste(ext(rast_obj), collapse = ", ")
+        
+          ##extract the origin (0,0) as a string
+          origin <- paste(origin(rast_obj), collapse = ", ") 
+    
+          ##extract the crs from the current object
+          crs <- terra::crs(rast_obj)
+    
+          #check if resolution, extent, origin, and CRS match the reference raster
+          resolution_match <- ifelse(resolution == ref_resolution, "MATCH", "DOES NOT MATCH")
+          extent_match <- ifelse(extent == ref_extent, "MATCH", "DOES NOT MATCH")
+          origin_match <- ifelse(origin == ref_origin, "MATCH", "DOES NOT MATCH")
+          crs_match <- ifelse(crs == ref_crs, "MATCH", "DOES NOT MATCH")
+    
+          #add the new information to the tibble for raster properties
+          spatial_properties <- spatial_properties %>%
+            add_row(name = layer_name,
+                    resolution_match = resolution_match,
+                    extent_match = extent_match,
+                    origin_match = origin_match,
+                    crs_match = crs_match)
+          }
+        
+        #if the object is a single raster:  
+        } else {
+          
+          #extract the spatial properties for this layer:
+          
+          ##extract the resolution (cell size) as a string
+          resolution <- paste(res(rast_obj), collapse = ", ")
+        
+          ##extract the extent (raster size) as a string 
+          extent <- paste(ext(rast_obj), collapse = ", ")
+        
+          ##extract the origin (0,0) as a string
+          origin <- paste(origin(rast_obj), collapse = ", ") 
+    
+          ##extract the crs from the current object
+          crs <- terra::crs(rast_obj)
+    
+          #check if resolution, extent, origin, and CRS match the reference raster
+          resolution_match <- ifelse(resolution == ref_resolution, "MATCH", "DOES NOT MATCH")
+          extent_match <- ifelse(extent == ref_extent, "MATCH", "DOES NOT MATCH")
+          origin_match <- ifelse(origin == ref_origin, "MATCH", "DOES NOT MATCH")
+          crs_match <- ifelse(crs == ref_crs, "MATCH", "DOES NOT MATCH")
+    
+          #add the new information to the tibble for raster properties
+          spatial_properties <- spatial_properties %>%
+            add_row(name = file_name,
+                    resolution_match = resolution_match,
+                    extent_match = extent_match,
+                    origin_match = origin_match,
+                    crs_match = crs_match)
+        }
+    }
+  
+  #return the tibble with the extracted spatial properties verification results
+  return(spatial_properties)
+}
+
+```
+
+
+## b) Visualization {#visualization} 
+
+### i) Generate Maps {#generate_maps}
+
+This function can be used to generate a map [@tmap] from a SpatRaster (only comaptible with terra rasters). In this workflow, this function is used to generate a map with the "optimal" and "not optimal" land classifications for each EEZ region for each potential finfish species. 
+
+The input is:
+
+  - rast_obj: a SpatRaster (1 layer)
+  - map_title: a title to be used for the map
+ 
+The output is:
+
+  - map: a tmap of the rast_obj generated for the region_name
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#write a function to generate a map for the species raster object
+generate_maps <- function(rast_list, map_title){
+  
+  #create a base map to be used from the first raster in the list
+  combined_map <- tm_shape(rast_list[[1]]) +
+    tm_raster(palette = c("lightgrey", "tomato3"),
+              alpha = 0.5,
+              labels = c("Not Optimal", "Optimal"),
+              title = "Suitability") +
+    tm_layout(main.title = "Species Name",
+              main.title.position = "center",
+              main.title.size = 1.5, 
+              main.title.fontfamily = "Times New Roman",
+              main.title.fontface = "bold",
+              legend.outside = TRUE)
+  
+  #for every object in the raster list create a map by iterating through the remaining rasters in the list 
+  if (length(rast_list) > 1) {
+    for (i in 2:length(rast_list)) {
+    
+    #extract the raster from the list 
+    raster_layer <- rast_list[[i]]
+    
+    #save the raster layer name
+    layer_name <- names(rast_list)[i]
+    
+    #add the new layer to the map
+    combined_map <- combined_map +
+      tm_shape(raster_layer) +
+      tm_raster(palette = c("lightgrey", "tomato3"),
+                alpha = 0.5,
+                legend.show = FALSE)
+    }
+  }
+  
+
+  #make the map name the species_name + _map and define file path
+  map_name <- file.path(maps_folder, paste(map_title, "map.png", sep = "_"))
+  
+  #save the tmap
+  tmap_save(combined_map, filename = map_name)
+  
+  #return the map
+  return(combined_map)
+  
+}
+
+```
+
+
+## c) Analysis {#analysis}
+
+### i) Identify Suitable Locations {#suitable_locations}
+
+This function can be used to reclassify the geometries in a SpatRaster (only compatible with terra) based on an optimal paramter range. It generates a new SpatRaster that has three classifications:
+
+  1. below range
+  2. optimal
+  3. above range
+
+The input is:
+
+  - raster_obj: a SpatRaster (1 layer)
+  - min_parameter: a numeric value for the minimum end of the parameter range
+  - max_paramter: a numeric value for the maximum end of the parameter range
+ 
+The output is:
+
+  - mask: a raster object that has been reclassified into the three groups and saved with the name "raster_obj + _mask"
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#write a function to reclassify the geometries in a raster based on the optimal parameter range 
+suitable_locations <- function(raster_obj, min_parameter, max_paramter) {
+  
+  #duplicate the raster that will be reclassified
+  mask <- raster_obj
+  
+  #create a reclassification matrix to reclassify the raster based on the optimal parameter range
+  rcl <- matrix(c(-Inf, min_parameter, 1, #below the minimum value ("below_range")
+                  min_parameter, max_paramter, 2, #in the optimal range ("optimal")
+                  max_paramter, Inf, 3), #above the maximum value ("above_range")
+                ncol = 3, byrow = TRUE)
+  
+  #use the reclassification matrix to reclassify the duplicated raster with the rcl
+  mask <- classify(mask, rcl = rcl)
+  
+  #assign the group to a classification (not optimal or optimal)
+  levels(mask) <- data.frame(id = c(1, 2, 3),
+                             cats = c("below_range", "optimal", "above_range"))
+  
+  #rename the mask to have the name of the raster_obj + _mask
+  mask_name <- paste(names(raster_obj), "mask", sep = "_")
+  names(mask) <- mask_name
+  
+  #return reclassified raster object
+  return(mask)
+  
+}
+  
+```
+
+
+### ii) Identify Optimal Locations {#optimal_locations}
+
+This function is used to generate a new raster object from two optimized SpatRaster (only compatible with terra). This function is formated to work with SpatRasters that were generated from the previously defined [suitable_locations](#suitable_locations) function. It generates a new SpatRaster that has two classifications based on the optimal parameter range of both SpatRasters (raster_1 and raster_2):
+
+  1. not_optimal
+  2. optimal
+
+The input is:
+
+  - raster_1: a SpatRaster generated with the [suitable_locations](#suitable_locations) function
+  - raster_2: a SpatRaster generated with the [suitable_locations](#suitable_locations) function
+ 
+The output is:
+
+  - combined: a raster object that has been reclassified into the two groups based on the most conservative optimal parameter of both SpatRasters
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#write a function to generate a new raster object from two optimized rasters (this function is formatted to work with rasters generated from the suitable_locations locations defined above)
+optimal_locations <- function(raster_1, raster_2){
+  
+  #duplicate raster_1 to serve as the combined raster
+  combined <- raster_1
+  
+  #first assign any locations with missing data from either raster as "not optimal" group 1
+  combined[raster_1 == 2 | raster_2 == 2] <- 1  
+  
+  #assign locations where BOTH parameters are "optimal" to group 2
+  combined[raster_1 == 2 & raster_2 == 2] <- 2  
+  
+  #assign locations that are not identified as optimal in both rasters as "not optimal" to group 1
+  combined[!(combined[] == 2)]  <- 1 
+  
+  #assign the categories a name (optimal or not optimal)
+  levels(combined) <- data.frame(id = c(1, 2),
+                                 cats = c("not_optimal", "optimal"))
+  
+  #return reclassified raster object
+  return(combined)
+  
+}
+
+```
+
+
+### iii) Rasterize Geometries {#rasterize_geometries}
+
+This function is used to rasterize the individual geometries in a sf object based on the name of a column in the dataframe. In this workflow, this was used to rasterize the region geometries from the EEZ dataframe. 
+
+The input is:
+
+  - df: an sf object that has an name_column with corresponding geometries
+  - template_raster: a SpatRaster that has the geometric properties compatible with other SpatRasters in the workflow
+  - name_column: the name of the column in the df that will correspond to a new raster object being generated from the corresponding geometry
+ 
+The output is:
+
+  - a list with 3 sublists inside:
+    1. rast_list: a list with SpatRasters that are generated for each of the names in the name_column of the df
+    2. rast_stack: a stack of all the SpatRasters that are generated and stored in the rast_list
+    3. bbox_list: a list with boundary boxes for each of the names in the name_column of the df 
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#write a function to rasterize individual geometries based on the column that has the corresponding name
+rasterize_geometries <- function(df, template_raster, name_column) {
+  
+  #create a list of names the name column
+  name_list <- unique(df[[name_column]])
+
+  #create an empty list to store the individual layers 
+  rast_list <- list()
+  
+  #create a duplicated empty raster from the template raster to be the raster stack
+  rast_stack <- rast(template_raster, nlyrs = 0)
+  
+  #create an empty list to hold the bboxes 
+  bbox_list <- list()
+  
+  #write a for loop to extract the geometry for each id and save it as a raster in the list
+  for(unique_name in name_list) {
+    
+    #filter the df to the geometry that corresponds to the current name
+    geometry <- df[df[[name_column]] == unique_name, ]
+    
+    #create a duplicated empty raster from the template raster to be the raster layer
+    rast_layer <- template_raster
+    
+    #rasterize the extracted geometry
+    geom_rast <- rasterize(geometry, rast_layer)
+    
+    #rename the raster with the name
+    names(geom_rast) <- unique_name
+    
+    #add the new raster to the list
+    rast_list[[unique_name]] <- geom_rast
+    
+    #create a boundary box from the geometry
+    bbox <- st_bbox(geometry)
+    
+    #rename the bbox with the unique_name + _bbox
+    bbox_name <- paste(names(unique_name), "bbox", sep = "_")
+    names(bbox) <- bbox_name
+    
+    #add the new bbox to the list
+    bbox_list[[unique_name]] <- bbox
+    
+    #add the new raster as a layer to the raster stack
+    rast_stack <- c(rast_stack, geom_rast)
+    
+  }
+  
+  #return a list with the individual layers, the raster stack, and the bbox_list
+  return(list(rast_list = rast_list, 
+              rast_stack = rast_stack, 
+              bbox_list = bbox_list))
+  
+}
+
+```
+
+
+### iv) Extract Regions {#extract_regions}
+
+This function is used to create a mask of a SpatRaster (only compatible with terra) for each layer in a SpatRaster stack. It will then also generate a map for each of the masked layers generated. This function is a modified version of the [rasterize_geometries](#rasterize_geometries) function. In this workflow, this function is used to create a masked SpatRaster for each region in the EEZ with the input raster (raster_obj_input) being the SpatRaster generated for each potential species. The function also CONTAINS the [generate_maps](#generate_maps) function to create the maps for each layer. 
+
+The input is:
+
+  - raster_obj_input: a SpatRaster object that is to be masked
+  - rast_stack_input: a SpatRaster stack that contains layers that will be used to mask the raster_obj_input
+  - map_name_list: a list of titles to be used for the maps generated 
+ 
+The output is:
+
+  - a list with 3 sublists inside:
+    1. rast_list: a list with masked SpatRasters that are generated for each of the layers in the rast_stack_input
+    2. rast_stack: a stack of all the SpatRasters that are generated and stored in the rast_list
+    3. map: the map created for the SpatRaster object (raster_obj_input)
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#write a function to create a list with a raster stack, rasters, and a map for each region 
+extract_regions <- function(raster_obj_input, rast_stack_input, map_name_list) {
+  
+  #create an empty raster to store the output of the for loop
+  rast_list <- list()
+  
+  #create a duplicate of the raster object to be the masked layer
+  rast_obj <- raster_obj_input
+
+  #create a duplicated empty raster from the raster object to be the raster stack
+  rast_stack <- rast(rast_stack_input, nlyrs = 0)
+  
+  for (region_name in names(rast_stack_input)) {
+    
+    #extract the region layer from the raster stack
+    region_layer <- rast_stack_input[[region_name]] 
+    
+    #use the region_layer to mask the rast_obj
+    region_layer_mask <- terra::mask(rast_obj, region_layer)
+    
+    #rename the raster with the region_name
+    names(region_layer_mask) <- region_name
+    
+    #add the new raster to the list
+    rast_list[[region_name]] <- region_layer_mask
+    
+    #add the new raster as a layer to the raster stack
+    rast_stack <- c(rast_stack, region_layer_mask)
+    
+    #save the map title based on the name_list generated with the species scientific names
+    map_title <- map_name_list[region_name]
+  
+    #create a map from the layer
+    map <- generate_maps(rast_list, map_title)
+  
+  }
+  
+  #return a list with the individual layers, the raster stack, and the map
+  return(list(rast_list = rast_list, 
+              rast_stack = rast_stack,
+              map = map))
+}
+  
+```
+
+
+### v) Rank Regions {#rank_regions}
+
+This function is used to create a tibble that ranks the regional SpatRasters (only compatible with terra) generated for each of the species using the previously defined functions. The regions are ranked based on the percent of the total area that is classified as optimal for cultivation. In this workflow, this function ranks the regions from 1 (best EEZ region for cultivation) to 5 (worst EEZ region for cultivation) based on a calculated optimal percent_cover. 
+
+The input is:
+
+  - rast_stack: a SpatRaster stack that contains an EEZ region in each layer that has the classifications of "optimal" or "not_optimal"
+ 
+The output is:
+
+  - region_rank: a tibble with a column for the scientific name of the species, the EEZ region, the optimal area in that region for that species, the total area in that region for that species, the optimal percent cover in that region for that species, and the rank of that region for that species. It includes all 26 potential finfish species
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#write a function to extract the create a tibble with each species and the rank for their optimal regions
+rank_regions <- function(rast_stack){
+  
+  #create a tibble to hold the output of the for loop
+  region_rank <- tibble(species = character(),
+                        region = character(),
+                        optimal_area = numeric(),
+                        total_area = numeric(),
+                        percent_cover = numeric(),
+                        rank = numeric())
+  
+  #for every layer in the rast_stack
+  for (layer_name in names(rast_stack)){
+    
+    #extract the region layer from the raster stack
+    layer <- rast_stack[[layer_name]] 
+  
+    #calculate the area (km^2) for each cell
+    cell_area <- cellSize(layer, unit = "km")
+    
+    #calculate the area of all the cells with the "not_optimal" (group 1) classification
+    not_optimal_area_km2 <- sum(values((layer == 1) * cell_area), na.rm = TRUE)
+    
+     #calculate the area of all the cells with the "optimal" (group 2) classification
+    optimal_area_km2 <- sum(values((layer == 2) * cell_area), na.rm = TRUE)
+    
+    #calculate the total area in the region
+    total_area_km2 <- optimal_area_km2 + not_optimal_area_km2
+    
+    #calculate the percent cover of optimal area
+    percent_cover <- (optimal_area_km2 /total_area_km2) *100
+    
+    #add the new information to the tibble 
+    region_rank <- region_rank %>%
+      add_row(species = NA,
+              region = layer_name,
+              optimal_area = optimal_area_km2,
+              total_area = total_area_km2,
+              percent_cover = percent_cover,
+              rank = NA)
+    
+  }
+  
+  #rank the regions with the highest optimal percent cover being ranked 1
+  region_rank <- region_rank %>%
+    mutate(rank = ifelse(percent_cover == 0, NA, 
+                         rank(-percent_cover, ties.method = "max"))) #if the percent cover is zero assign the rank NA, and if there is a tie, assign it the max rank to be conservative
+  
+  #return a table with the rankings for each region and each species 
+  return(region_rank)
+  
+}
+
+```
+
+
+# IV. Set Up {#set_up}
+---
+
+This [section](#set_up) sets up the filepaths and files for later analysis:
+
+  - [a) Define File Paths](#file_paths),
+  - [b) Load Spatial Data](#spatial_data), and
+  - [c) Examine Geometric Properties](#examine_geometric_properties).
+
+
+## a) Define File Paths {#file_paths}
+Then, define the file paths for the inputs (1. sea surface temperature, 2. bathymetry, 3. economic exclusion zone data, 4. potential species) and the output figures (1. maps, 2. tables, and 3. heatmap): 
+
+### i) Input Data {#input_file_paths}
+
+  1. Sea Surface Temperature (SST):
+    - To characterize the average sea surface temperature inside the region of interest, we obtained average annual sea surface temperature data for the years 2008 to 2012.
+    - This data was generated by the [NOAA Coral Reef Watch Daily 5km Satellite Sea Surface Temperature (SST) (v3.1)](https://coralreefwatch.noaa.gov/product/5km/index_5km_sst.php).
+  2. Bathymetry: 
+    - To characterize the depth profile inside the region of interest, we obtained bathymetry data from the [General Bathymetric Chart of the Oceans (GEBCO)](https://www.gebco.net/data_and_products/gridded_bathymetry_data/#area).
+  3. Economic Exclusion Zone (EEZ):
+    - To define the area of U.S. waters that could potential be regions of interest for a marine aquaculture operation, we obtained a shapefile outlining the economic exclusion zones (EEZ) along the west coast of the U.S.
+    - This data was developed by the [Flanders Marine Institute](https://www.marineregions.org/eez.php). 
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#define the pathway to access the average annual sea surface temperature (sst) files 
+sst_files <- list.files(here::here("data"),
+                        pattern = "average_annual_sst.*\\.tif$",
+                        full.names = TRUE)
+
+#define the pathway to access the depth file
+depth_file <- here::here("data", "depth.tif")
+
+#define the pathway to access the economic exclusion zone (eez) files 
+eez_file <- here::here("data", "wc_regions_clean.shp")
+
+#define the pathway to access the csv with the potential finfish species data
+species_file <- here::here("data", "potential_finfish_species.csv")
+
+```
+
+
+### ii) Output Data {#output_file_paths}
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#define the pathway to save to the maps subfolder in the figures folder
+maps_folder <- here::here("figures", "maps")
+
+#define the pathway to save to the tables subfolder in the figures folder
+tables_folder <- here::here("figures", "tables")
+
+#define the pathway to save to the heatmap subfolder in the figures folder
+heatmap_folder <- here::here("figures", "heatmap")
+
+```
+
+
+## b) Load Spatial Data {#spatial_data}
+
+Now that we have defined the file paths, we can read in the necessary spatial data:
+
+1. Sea Surface Temperature (SST):
+
+  - The sea surface temperature image files were read in as a [SpatRaster stack]() containing a layer for each year. 
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#read in the sea surface temperature (sst) rasters 
+sst_rasters <- terra::rast(sst_files)
+
+#write a for loop to rename each layer to have the format sst_year
+for (i in seq_along(names(sst_rasters))) {
+  
+  #extract the year for the corresponding file, by extracting the last four digits 
+  year <- str_extract(basename(sst_files[i]), "\\d{4}") #extracting the last four digits
+  
+  #format the name of the current layer to be sst_year and save it as the new name for the layer
+  names(sst_rasters)[i] <- paste("sst", year, sep = "_")
+}
+
+```
+
+2. Bathymetry: 
+
+  - The bathmetry image file was read in as a SpatRaster with [@terra] containing a depth layer.
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#read in the depth raster
+depth_raster <- terra::rast(depth_file)
+
+#rename the layer
+names(depth_raster) <- "depth"
+
+```
+
+3. Economic Exclusion Zone (EEZ):
+
+  - The polygons for the economic exclusion zones were read in as an sf object with [@sf] and the data frame was cleaned with to only contain the regions and the corresponding total area (km^2) while remaining sticky.  
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+#| results: false
+
+#read in the economic exclusion zone (eez) raster
+eez <- sf::st_read(eez_file)
+
+#create a vector with region_id's that correspond to the regions based on the geographic order
+region_ids <- c("Washington" = 1,
+                "Oregon" = 2,
+                "Northern California" = 3,
+                "Central California" = 4,
+                "Southern California" = 5)
+
+#create a region_id column in the eez dataset that assigns the regions a number from north (washington) to south (southern_california)
+eez <- eez %>%
+  mutate(region_id = region_ids[rgn])
+
+#create a version of the dataframe with the capitalized region names still
+eez_caps <- eez %>%
+  clean_names() %>%
+  rename(region = rgn) %>%
+  select(region_id, region, area_km2, geometry)
+
+#tidy up the data
+eez <- eez %>%
+  clean_names() %>% #clean up the column names
+  mutate(region = str_replace_all(rgn, " ", "_") %>% 
+           str_to_lower()) %>% #create a region column with the name in snake_case
+  select(region, area_km2, geometry) #only keep the necessary columns
+
+```
+
+
+## c) Examine Geometric Properties {#examine_geometric_properties}
+
+Next, we need to examine the geometric properties (resolution, extent, origin, and coordinate reference system (crs)) for each of the spatial objects that we are working with. We will need to transform any spatial objects that have mismatched properties.
+
+### i) Identify Properties 
+
+We will start by identifying the geometric properties of each of the spatial objects with the [extract_spatial_properties](#spatial_properties) function:
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#create a summary list with all the files
+spatial_file_list <- list(sst_rasters = sst_rasters,
+                          depth_raster = depth_raster,
+                          eez = eez)
+
+#identify the spatial properties of all the spatial files in the list
+spatial_properties <- extract_spatial_properties(spatial_file_list)
+
+#generate a kable from the spatial properties extracted above
+spatial_properties_kable <- spatial_properties %>%
+  kable("html",
+        col.names = c("Name", "Resolution", "Extent", "Origin", "CRS"),
+        caption = htmltools::tags$div(style = "text-align: center; font-size: 20px;",
+                                      htmltools::tags$strong("Geometric Properties Identification Results"))) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>%
+  row_spec(row = 0, bold = TRUE) %>%
+  kable_classic(html_font = "Times New Roman")
+
+#define the file path 
+kable_file <- file.path(tables_folder, "spatial_properties_kable.html")
+
+#save the kable
+save_kable(spatial_properties_kable, file = kable_file)
+
+#print the kable
+spatial_properties_kable
+
+```
+
+
+It appears that the coordiante reference system for the bathymetry data (depth_raster) and the economic exclusion zone data (eez) does not match that of the sea surface temperature data (sst_rasters).
+
+### ii) Transform Coordinate Reference Systems
+
+Therefore, we will transform the bathymetry data (depth_raster) and the economic exclusion zone data (eez) to match the coordinate reference system (crs = EPSG:9122) of sea surface temperature data (sst_rasters).
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#define the target CRS (EPSG:9122) to be used in the transformations
+target_crs <- crs(sst_rasters)
+
+#transform the depth_raster to the target crs
+depth_raster <- terra::project(depth_raster, target_crs)
+
+#transform the eez to the target crs
+eez <- st_transform(eez, crs = target_crs)
+
+#create a summary list with all the files
+spatial_file_list <- list(sst_rasters = sst_rasters,
+                          depth_raster = depth_raster,
+                          eez = eez)
+
+```
+
+
+### iii) Verify CRS Match 
+
+Now verify that all of the spatial files have the same coordinate reference system with the [check_crs](#check_crs) function before continuing with analysis:
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#check that all the files have the same crs (target_crs)
+all_crs_match <- sapply(spatial_file_list, check_crs, target_crs = target_crs)
+
+#verify that all the files have the same crs 
+if (all(all_crs_match)) {
+  
+  #if all the files have the same crs (all TRUE) then print
+  print("All spatial files have the target CRS")
+  
+} else {
+  
+  #if all the files do NOT have the same crs (at least one FALSE) then print
+  print("The following files do not match the target CRS:")
+  print(names(spatial_file_list)[!all_crs_match])
+}
+
+```
+
+Since all the spatial files have the same coordinate reference system, we can move to the analysis process. 
+
+
+# V. Oyster Aquaculture {#oyster_aquaculture}
+---
+
+This [section](#oyster_aquaculture) identifies locations that would be suitable for only bivalve farming:
+
+  - [a) SST and Bathymetry Data](#sst_bath_data),
+  - [b) Determine Suitable Oyster Cultivation Locations](#oyster_range), and 
+  - [c) Visualize Suitable Locations](#oyster_locations).
+
+
+## a) SST and Bathymetry Data {#sst_bath_data}
+
+To start, we will ensure that the sea surface temperature (SST) and the bathymetry data are compatible to process together
+
+### i) Transform SST Data
+
+First, we need to calculate the average sea surface temperature by taking the mean across all of the rasters (from the years 2008 to 2012), and then convert this temperature from Kelvin to Celsius.
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#find the mean sea surface temperature and store it as a single layer raster
+sst_mean <- terra::mean(sst_rasters, na.rm = TRUE) 
+
+#now convert the temperature to Celcius by subtracting 273.15 to convert from Kelvin
+sst_mean_celsius <- sst_mean - 273.15
+
+#rename the layer for the celcisus raster
+names(sst_mean_celsius) <- "mean_sst_c"
+
+```
+
+
+### ii) Identify Geometric Properties
+
+Now we need to verify that the rasters are compatible to be combined. We will start by identifying the geometric properties of with the [extract_spatial_properties](#spatial_properties) function:
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#create a summary list with all the files
+sst_bath_file_list <- list(sst_mean_celsius = sst_mean_celsius,
+                           depth_raster = depth_raster)
+
+#identify the spatial properties of all the files in the list
+spatial_properties_sst_bath <- extract_spatial_properties(sst_bath_file_list)
+
+#generate a kable from the spatial properties extracted above
+spatial_properties_kable_sst_bath <- spatial_properties_sst_bath %>%
+  kable("html",
+        col.names = c("Name", "Resolution", "Extent", "Origin", "CRS"),
+        caption = htmltools::tags$div(style = "text-align: center; font-size: 20px;",
+                                      htmltools::tags$strong("Geometric Properties Identification Results"))) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>%
+  row_spec(row = 0, bold = TRUE) %>%
+  kable_classic(html_font = "Times New Roman")
+
+#define the file path 
+kable_file <- file.path(tables_folder, "spatial_properties_kable_sst_bath.html")
+
+#save the kable
+save_kable(spatial_properties_kable_sst_bath, file = kable_file)
+
+#print the kable
+spatial_properties_kable_sst_bath
+
+```
+
+It appears that the rasters have the same coordinate reference systems (since we transformed them to match above), but differ in their resolution, extent, and origin.
+
+### iii) Match Resolution, Extent, and Origin
+
+To ensure compatible geometric properties we will transform the data so both raster have the same resolution, extent, origin, and coordinate reference system. Since the bathymetry data has a larger extent than the sea surface temperature, we can crop this raster to match the extent and origin of the temperature raster.
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#crop the bathymetry raster to match the extent/origin of the sst raster 
+depth_raster_crop <- terra::crop(depth_raster, sst_mean_celsius)
+
+```
+
+
+Since the bathymetry data has a finer resolution than the sea surface temperature (SST) data, we will coarsen the bathymetry data by resampling the data using the nearest neighbor approach. 
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#resample the cropped bathymetry data using the nearest neighbor approach 
+depth_resampled <- terra::resample(depth_raster_crop, sst_mean_celsius, method = "near")
+
+```
+
+Now we will verify that the transformations were successful and the resulting rasters have compatible geometric properties.
+
+### iv) Identify Geometric Properties
+
+Now we need to verify that the rasters are compatible to be combined by ensuring the geometric properties have been succesfully transformed with the [check_spatial_properties](#check_spatial) function:
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#create a summary list with all the files
+sst_bath_transform_file_list <- list(sst_mean_celsius = sst_mean_celsius,
+                                     depth_resampled = depth_resampled)
+
+#identify the spatial properties of all the files in the list
+spatial_properties_sst_bath_transform <- check_spatial_properties(sst_bath_transform_file_list)
+
+#generate a kable from the spatial properties extracted above
+spatial_properties_kable_sst_bath_transform <- spatial_properties_sst_bath_transform %>%
+  kable("html",
+        col.names = c("Name", "Resolution", "Extent", "Origin", "CRS"),
+        caption = htmltools::tags$div(style = "text-align: center; font-size: 20px;",
+                                      htmltools::tags$strong("Geometric Properties Verification Results"))) %>%
+  kable_styling(full_width = FALSE, font_size = 14) %>%
+  row_spec(row = 0, bold = TRUE) %>%
+  kable_classic(html_font = "Times New Roman")
+
+#define the file path 
+kable_file <- file.path(tables_folder, "spatial_properties_kable_sst_bath_transform.html")
+
+#save the kable
+save_kable(spatial_properties_kable_sst_bath_transform, file = kable_file)
+
+#print the kable
+spatial_properties_kable_sst_bath_transform
+
+```
+
+Since the transformations were successful, we can move forward with identifying suitable locations for oyster cultivation along the west coast.
+
+## b) Determine Suitable Oyster Cultivation Locations {#oyster_range}
+
+Before we can identify potential finfish species that will be suitable options for marine aquaculture, we need to determine which locations are within the scope of the temperature and depth parameters for oysters. 
+
+### i) Temperature Conditions
+
+To start, we will classify locations as "optimal" or "not optimal" for oyster cultivation based on the [average sea surface temperature](#sst_bath_data) calculated above. This is done by creating a mask of the average sea surface temperature data (mean_sst_celcius) and assigning appropriate categorical levels using the [suitable_locations](#suitable_locations) function: 
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#define the minimum temperature 
+min_temp <- 11
+
+#define the maximum temperature
+max_temp <- 30
+
+#generate a masked version of the temperature raster to identify optimal and not optimal locations
+sst_mask <- suitable_locations(sst_mean_celsius, min_temp, max_temp)
+
+```
+
+
+### ii) Depth Conditions
+
+Now we classified locations as "optimal", "not optimal", or "land" for oyster cultivation based on the [bathymetry data](#sst_bath_data) processed above. This is done by creating a mask of the bathymetry data (depth_resampled) and assigning appropriate categorical levels using the [suitable_locations](#suitable_locations) function: 
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#define the "minimum" depth (meters below sea level)
+min_depth <- -70
+
+#define the "maximum" depth (sea surface)
+max_depth <- 0
+
+#generate a masked version of the bathymetry raster to identify optimal and not optimal locations
+depth_mask <- suitable_locations(depth_resampled, min_depth, max_depth)
+
+#we will now rename the "not optimal" group 3 to be land (elevations above sea level)
+levels(depth_mask) <- data.frame(id = c(1, 2, 3),
+                                 cats = c("not_optimal", "optimal", "land"))
+
+```
+
+
+### iii) Combine Optimal Conditions
+
+Once the physical condition rasters have been reclassified, we can combine the reclassified rasters (sst_mask and depth_mask) into a single raster that contains the optimal locations for oyster cultivation based on both parameters using the [optimal_locations](#optimal_locations) function:
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#create a raster for the optimal geographic range for oyster cultivation based on the temperature and depth parameters
+oyster_range <- optimal_locations(sst_mask, depth_mask)
+
+```
+
+
+### iv) Overlay Economic Exclusion Zones 
+
+After generating a raster with the optimal location for oyster cultivation, we can overlay the economic exclusion zones (eez) data. Before combining this information, we must rasterize the eez data to make it compatible with the other SpatRaster objects. We will create an individual raster object for each region (Southern California, Central California, Northern California, Oregon, and Washington) of the economic exclusion zones as well as a raster stack which contains each region as a layer using the [rasterize_geometries](#rasterize_geometries) function: 
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#rasterize the regions and create a raster stack with all of the regions
+eez_results <- rasterize_geometries(eez, oyster_range, "region")
+
+#save the list of region rasters 
+eez_regions <- eez_results$rast_list
+
+#save the raster stack
+eez_stack <- eez_results$rast_stack
+
+#save the list of boundary boxes for each region 
+eez_bbox_list <- eez_results$bbox_list
+
+```
+
+
+## c) Visualize Suitable Locations {#oyster_locations}
+
+Now we can visualize the suitable locations for oyster cultivation in each region of the economic exclusion zone along the west coast of the U.S. Let's start by making a color palette to visualize each of the regions within the west coast EEZ.
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#create a palette with 5 colors for the regions in the EEZ 
+region_palette <- cal_palette(n = 5, name = "bigsur")
+
+#assign the colors in the palette to region names
+region_names <- c("Washington",
+                  "Oregon",
+                  "Northern California",
+                  "Central California",
+                  "Southern California")
+
+#assign the colors in the palette to the list of names in region_names
+region_palette_named <- setNames(region_palette, region_names)
+
+#create a copy of the eez dataframe with a color that corresponds to each region in the region_palette_named
+eez_color <- eez_caps %>%
+  mutate(color = region_palette_named[region])
+
+```
+
+
+Now we can create an interactive map to visualize the optimal locations for oyster cultivation within each EEZ region:
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#create a map that visualizes the suitable oyster cultivation locations and eez regions
+tmap_mode("view")
+
+#create an object to use with htmltools for better visualization
+oyster_range_map <- tm_shape(oyster_range) +
+  tm_raster(title = "Suitability",
+            palette = c("not_optimal" = "lightgrey", "optimal" = "tomato3"), 
+            labels = c("Not Optimal", "Optimal")) +
+  tm_shape(eez_color) + 
+  tm_fill(col = "color",
+          popup.vars = c("EEZ Region" = "region"),
+          alpha = 0.5,
+          title = "EEZ Regions") +
+  tm_layout(main.title = "Suitable Oyster Cultivation Locations and EEZ Regions",
+            main.title.size = 1.5,
+            main.title.fontface = "bold",
+            main.title.fontfamily = "Times New Roman") +
+  tm_scale_bar(position = c("left", "bottom")) 
+
+#add a title for the interactive view map
+map_title <- tags$h1("Suitable Oyster Cultivation Locations",
+                     style = "text-align: center; font-family: Times New Roman; font-size: 24px; font-weight: bold;")
+
+#combine the title and the map
+oyster_range_map <- htmltools::browsable(htmltools::tagList(map_title,
+                                                            tmap_leaflet(oyster_range_map)))
+
+#define the file path 
+map_files <- file.path(maps_folder, "oyster_range_map.html")
+
+#save the map
+htmltools::save_html(oyster_range_map, file = map_files)
+
+#print the map
+oyster_range_map
+
+```
+
+
+# VI. Potential Finfish Aquaculture {#finfish_aquaculture}
+---
+
+This [section](#finfish_aquaculture) identifies locations that would be suitable for BOTH bivalve and finfish aquaculture:
+
+  - [a) Load Species Data](#load_species) and 
+  - [b) Identify Potential Compatible Species](#potential_species). 
+
+## a) Load Species Data {#load_species}
+
+Start by loading in the csv with the metadata for the 26 potential finfish species identified in the [background section](#potential_species):
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#read in the csv for the potential species 
+potential_species <- read_csv(species_file)
+
+#subset the data to only the species common name and scientific name
+potential_species_tbl <- potential_species %>%
+  select(1:2) %>%
+  mutate(number = paste0(row_number())) %>% #add a number based on the row number in the df
+  select(3,1,2)
+
+#select only the first 13 rows of the table 
+potential_species_tbl_1 <- potential_species_tbl %>%
+  slice(1:13) 
+
+#select only the last 13 rows of the table
+potential_species_tbl_2 <- potential_species_tbl %>%
+  slice(14:26)
+
+#combine the two tables
+potential_species_comb <- cbind(potential_species_tbl_1, potential_species_tbl_2)
+
+#tidy up the data
+potential_species <- potential_species %>%
+  clean_names() %>%
+  mutate(common_name = str_replace_all(common_name, " ", "_") %>% str_to_lower(),
+         scientific_name = str_replace_all(scientific_name, " ", "_") %>% str_to_lower())
+
+```
+
+
+Then print out a table with a list of the potential species being considered.
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#print a kable of the potential species names
+potential_species_kable <- potential_species_comb %>%
+  kable("html",
+        col.names = c("Number", "Common Name", "Latin Name", "Number", "Common Name", "Latin Name"),
+        caption = htmltools::tags$div(style = "text-align: center; font-size: 15px;",
+                                      htmltools::tags$strong("Potential Finfish Species"))) %>%
+  kable_styling(full_width = TRUE, font_size = 10) %>%
+  row_spec(row = 0, bold = TRUE, italic = FALSE) %>%
+  column_spec(column = c(3, 6), italic = TRUE) %>%
+  kable_classic(html_font = "Times New Roman")
+
+#define the file path 
+kable_file <- file.path(tables_folder, "potential_species_kable.html")
+
+#save the kable
+save_kable(potential_species_kable, file = kable_file)
+
+#print the kable
+potential_species_kable
+
+```
+
+
+## b) Identify Potential Compatible Species {#potential_species}
+
+Now we will use the functions defined above to evaluate the compatibility of each potential finfish species in each EEZ region. For each species, we will generate a SpatRaster for each EEZ region whose area has been classified as "optimal" or "not optimal" for the cultivation of that species and oysters. We will then stack these SpatRasters to generate a SpatRaster stack for each species containing a layer for each region. Additionally we will generate a tibble which ranks each EEZ region for each potential finfish species based on the percent of optimal area in the region. Finally, we will also create a map for each region layer generated for each potential species. The functions are used in the below order:
+
+  1. [suitable_locations](#suitable_locations),
+  
+  - this function is used twice in the workflow; 
+    a) the first time is used to find the optimal location for the current species based on the temperature range, and 
+    b) the second time is used to find the optimal location for the current species based on the depth range.
+  2. [optimal_locations](#optimal_locations),
+  
+  - this function is used twice in the workflow; 
+    a) the first time is used to find the optimal location for the current species based on the depth raster and temperature raster generated, and 
+    b) the second time is used to find the optimal location for the current species AND oysters.
+  3. [extract_regions](#extract_regions), and
+  
+  - this function CONTAINS the [generate_maps](#generate_maps) function to create a map for each of the potential finfish species  
+  4. [rank_regions](#rank_regions). 
+ 
+Output:
+This workflow will generate three outputs:
+
+  1. species_rast_list: a list with 26 sublists (one for each species). Each species sublist contains two more sublists:
+    a) rast_list: a list with region specific SpatRasters that are generated for each of the EEZ Regions
+    b) rast_stack: a stack of all the SpatRasters that are generated and stored in the rast_list
+  2. region_rank:  a tibble with a column for the scientific name of the species, the EEZ region, the optimal area in that region for that species, the total area in that region for that species, the optimal percent cover in that region for that species, and the rank of that region for that species. It includes all 26 potential finfish species
+  3. species_map: a list with 26 sublists (one for each species). Each species sublist contains a map for each EEZ region with the "optimal" and "not optimal" classifications
+ 
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#create an empty list to hold the output of the for loop
+species_rast_list <- list()
+
+#create a dataframe column with the scientific names from the potential_species_tbl
+map_name_df <- potential_species_tbl[, 3]
+
+#convert the map_name_df to a list
+map_name_list <- as.list(map_name_df)
+
+#bind the map_name_list on to the potential_species dataframe
+potential_species_names <- cbind(potential_species, map_name_df)
+
+#rename the new column to be tidyverse friendly
+potential_species_names <- potential_species_names %>%
+  rename(species_name_caps = 9)
+
+#create a tibble to hold the output of the for loop
+region_rank <- tibble(species = character(),
+                      region = character(),
+                      optimal_area = numeric(),
+                      total_area = numeric(),
+                      percent_cover = numeric(),
+                      rank = numeric())
+
+#create a list to hold the species maps
+species_map <- list()
+
+#for every species in the potential species dataframe
+for(i in 1:nrow(potential_species_names)) {
+  
+  #extract the properly formatted species name from the map_name_list
+  species_name_caps <- potential_species_names$species_name_caps[i]
+  
+  #save the species name as the scientific name
+  species_name <- potential_species_names$scientific_name[i]
+  
+  #define the file path to save the html maps
+  map_files_html <- file.path(maps_folder, paste(species_name, "map.html", sep = "_"))
+
+  #define the file path to save the png maps
+  map_files_png <- file.path(maps_folder, paste(species_name, "map.png", sep = "_"))
+  
+  #extract the minimum temperature for this species
+  min_temp <- potential_species_names$min_temp[i]
+  
+  #extract the maximum temperature for this species
+  max_temp <- potential_species_names$max_temp[i]
+  
+  #since the thermal range of tolerance was predicted from a model for some species, we have classified this in other columns (preferred_min_temp and preferred_max_temp) and left the min_temp and max_temp column empty
+  
+  ##so if the min_temp is NA we will use the preferred_min_temp instead
+  min_temp <- ifelse(is.na(min_temp), #if the min_temp is NA
+                     potential_species_names$preferred_min_temp[i], #use the preferred_min_temp
+                     min_temp) #if is.na(min_temp) = FALSE then use the min_temp already extracted
+  
+  ##or if the max_temp is NA we will use the preferred_max_temp instead
+  max_temp <- ifelse(is.na(max_temp), #if the max_temp is NA
+                     potential_species_names$preferred_max_temp[i], #use the preferred_max_temp
+                     max_temp) #if is.na(max_temp) = FALSE then use the max_temp already extracted
+  
+  #the min_depth and max_depth in the dataframe are recorded as negative numbers to represent meters below sea level to align with the format in the bathymetry data which has a vertical datum of mean sea level
+  
+  ##however the function wants the min_parameter value which would correspond to the max_depth, so extract the maximum depth for this species
+  min_depth <- potential_species_names$max_depth[i]
+  
+  ##the function wants the max_parameter value which would correspond to the min_depth, so extract the minimum depth for this species
+  max_depth <- potential_species_names$min_depth[i]
+  
+  #FUNCTION ONE A: generate a masked version of the sea surface temperature data using the suitable_locations function
+  temp_rast <- suitable_locations(sst_mean_celsius, min_temp, max_temp)
+  
+  #FUNCTION ONE B:generate a masked version of the bathymetry using the suitable_locations function
+  depth_rast <- suitable_locations(depth_resampled, min_depth, max_depth)
+  
+  #FUNCTION TWO A: determine the optimal range for this species using the optimal_locations function
+  optimal_rast <- optimal_locations(temp_rast, depth_rast)
+  
+  #FUNCTION TWO B: determine the optimal range for this species AND the oysters using the optimal_locations function
+  potential_locations <- optimal_locations(oyster_range, optimal_rast)
+
+  #FUNCTION THREE: generate a raster stack with each layer in the stack being a region in the economic exclusion zone
+  results_list <- extract_regions(potential_locations, eez_stack, map_name_list)
+  
+  #FUNCTION FOUR: extract the species raster stack from the results list
+  species_stack <- results_list$rast_stack
+
+  #rank the regions for each species 
+  species_rank <- rank_regions(species_stack)
+  
+  #add the species name to the tibble
+  species_rank <- species_rank %>%
+    mutate(species = species_name)
+  
+  #add the new species_rank tibble to the full tibble 
+  region_rank <- bind_rows(region_rank, species_rank)
+  
+  #extract the list of region maps from results list
+  map <- results_list[["map"]]
+  
+  #finish formatting the map
+  map <- map +
+    tm_shape(eez_color) + 
+    tm_fill(col = "color",
+            popup.vars = c("EEZ Region" = "region"),
+            alpha = 0.5,
+            title = "EEZ Regions") +
+    tm_layout(main.title = expression(italic(species_name_caps)),
+              main.title.position = "center",
+              main.title.size = 1.5, 
+              main.title.fontfamily = "Times New Roman") + 
+    tm_graticules()
+  
+  #save the png map
+  tmap_save(map, filename = map_files_png)
+  
+  #add a title for the interactive view map
+  map_title <- tags$h1(species_name_caps,
+                       style = "text-align: center; font-family: Times New Roman; font-size: 24px; font-weight: bold; font-style: italic;")
+
+  #combine the title and the map
+  map_interactive <- htmltools::tagList(map_title, tmap_leaflet(map))
+  
+  #save the html map
+  htmltools::save_html(tmap_leaflet(map), file = map_files_html)
+  
+  #add the map to the species_map list
+  species_map[[species_name]] <- map_interactive
+  
+  #save the species results list to the species rast list
+  species_rast_list[[species_name]] <- results_list
+  
+}
+
+```
+
+Now let's visualize some of the results from our analysis.
+
+# VII. Results {#results}
+---
+
+This [section](#results) summarizes the results of the above analysis through a variety of visualizations:
+
+  - [a) Potential Species Region Ranking](#species_ranks), 
+  - [b) Ideal Locations](#ideal_locations), and 
+  - [c) Example Finfish Map](#example_map). 
+
+## a) Potential Species Region Ranking {#species_ranks}
+
+First, we can generate a heatmap to determine which regions are most suitable for aquaculture farms for both oysters and the 26 potential finfish species. 
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#make sure the regions are in order from south to north 
+region_rank$region <- factor(region_rank$region, 
+                             levels = c("southern_california",
+                                        "central_california",
+                                        "northern_california",
+                                        "oregon",
+                                        "washington"))
+
+
+#create a heatmap of the potential species and their ranking per region 
+heatmap <- ggplot(region_rank, aes(x = species, y = region, fill = percent_cover)) +
+  geom_tile(color = "black", size = 0.5) +  
+  geom_text(aes(label = round(percent_cover, 1)), #show the percent cover to 1 decimal
+            color = "black", size = 2) +
+  scale_fill_gradient2(midpoint = 0, #make the midpoint 0 so we can make the 0 percent_cover values the "azure" color
+                       mid = "azure",
+                       high = "tomato3",
+                       name = "Rank",
+                       breaks = seq(0, 5, by = 1),
+                       limits = c(0, 5)) +
+  scale_y_discrete(labels = c("washington" = "Washington",
+                              "oregon" = "Oregon",
+                              "northern_california" = "Northern California",
+                              "central_california" = "Central California",
+                              "southern_california" = "Southern California")) +
+  labs(title = "Species vs Region Rankings",
+       subtitle = "Heatmap of Percent Optimal Cover",
+       x = "Species",
+       y = "Region") +  
+  theme(plot.title = element_text(family = "Times New Roman", 
+                                  face = "bold",
+                                  size = 16,
+                                  hjust = 0.5), 
+        plot.subtitle = element_text(family = "Times New Roman",
+                                     size = 14,
+                                     hjust = 0.5),
+        axis.title = element_text(family = "Times New Roman",
+                                  face = "bold",
+                                  size = 14),
+        axis.text.x = element_text(family = "Times New Roman",
+                                   size = 10,
+                                   angle = 45,
+                                   hjust = 1,
+                                   vjust = 1),
+        axis.text.y = element_text(family = "Times New Roman", 
+                                   size = 10),
+        legend.title = element_text(family = "Times New Roman",
+                                    face = "bold",
+                                    size = 12),
+        legend.text = element_text(family = "Times New Roman",
+                                   size = 10),
+        legend.position = "right",
+        legend.box.background = element_rect(color = "black", size = 1))
+
+#save the heatmap to the heatmap sub folder in the figures folder
+ggsave(heatmap, file = file.path(heatmap_folder, "species_vs_region_heatmap.png"))
+
+#print the heatmap below 
+heatmap
+
+```
+
+
+## b) Ideal Locations {#ideal_locations}
+
+Then we can determine which regions will be the most optimal for creating farms for oyster and a finfish species:
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#subset the region_rank dataframe to only include the regions that are the best for cultivation
+top_regions <- region_rank %>%
+  group_by(species) %>%
+  filter(rank == 1) %>%
+  ungroup()
+
+#create a table with the top regions for each of the potential species 
+##excludes regions that have no number 1 regions 
+top_regions_kable <- top_regions %>%
+  kable("html",
+        col.names = c("Species", "Region", "Optimal Area", "Total Area", "Percent Cover", "Rank"),
+        caption = htmltools::tags$div(style = "text-align: center; font-size: 15px;",
+                                      htmltools::tags$strong("Top Ranked Regions for Each Species"))) %>%
+  kable_styling(full_width = TRUE, font_size = 10) %>%
+  row_spec(row = 0, bold = TRUE, italic = FALSE) %>%
+  column_spec(column = 1, italic = TRUE) %>% 
+  kable_classic(html_font = "Times New Roman")
+
+#define the file path 
+kable_file <- file.path(tables_folder, "top_regions_kable.html")
+
+#save the kable
+save_kable(top_regions_kable, file = kable_file)
+
+#print the kable
+top_regions_kable
+
+```
+
+
+## c) Example Finfish Map {#example_map}
+
+Finally, we can examine one of the regional maps generated for a potential finfish species. We will visualize the maps generated for the *Sebastes pinniger* (Canary Rockfish) as an example of the maps created for all of the potential finfish species:
+
+```{r}
+#| warning: false
+#| message: false
+#| code-fold: true
+
+#examine the maps generated for the sebastes_pinniger species 
+tmap_mode("view")
+
+#extract the species map from the map list
+sebastes_pinniger_map <- species_map[["sebastes_pinniger"]]
+
+#print the map
+sebastes_pinniger_map
+
+```
+
+These results show that for all of the potential finfish species chosen, the Washington EEZ is the most suitable for paired oyster aquaculture. However, further parameters for each species should be examined more closely for potential areas with the Washington region before moving forward with development. 
+
+# IX. Citations
+---
+::: {#refs}
+:::
+
