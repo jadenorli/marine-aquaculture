@@ -3,9 +3,7 @@ title: "Sustainable Growth: Exploring Integrative Multi-Trophic Aquaculture on t
 output:
   github_document:
     toc: false
-bibliography: 
- - ./bibs/references.bib
- - ./bibs/packages.bib
+bibliography: ./bibs/combined.bib
 ---
 
 # Contents
@@ -20,7 +18,7 @@ potentially suitable locations for integrative multi-trophic aquaculture
 This repository highlights a variety of skills and techniques including:
 
 1.  Data Management
-    -   Wrangling and tidying data using [@dplyr], [@tidyr], and
+    -   Wrangling and tidying data using [@tidyverse], [@here], and
         [@janitor]
 
     -   Visualizations with [@ggplot2] and [@tmap]

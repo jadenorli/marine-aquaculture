@@ -109,18 +109,19 @@ First, load the necessary packages for this analysis:
 rm(list = ls())
 
 #load necessary data packages
-library(terra)
-library(sf)
 library(tidyverse)
-library(tmap)
 library(here)
 library(janitor)
-library(knitr)
 library(stringr)
+library(terra)
+library(sf)
+library(calecopal)
+library(tmap)
+library(ggplot2)
+library(knitr)
 library(tibble)
 library(kableExtra)
 library(htmltools)
-library(calecopal)
 
 ```
 

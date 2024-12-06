@@ -14,8 +14,8 @@ potentially suitable locations for integrative multi-trophic aquaculture
 This repository highlights a variety of skills and techniques including:
 
 1.  Data Management
-    - Wrangling and tidying data using (**dplyr?**), (**tidyr?**), and
-      (Firke 2023)
+    - Wrangling and tidying data using (Wickham et al. 2019), (Müller
+      2020), and (Firke 2023)
 
     - Visualizations with (**ggplot2?**) and (Tennekes 2018)
 
@@ -167,6 +167,13 @@ Hijmans, Robert J. 2024. *Terra: Spatial Data Analysis*.
 
 </div>
 
+<div id="ref-here" class="csl-entry">
+
+Müller, Kirill. 2020. *Here: A Simpler Way to Find Your Files*.
+<https://CRAN.R-project.org/package=here>.
+
+</div>
+
 <div id="ref-noaa_crw_sst_2024" class="csl-entry">
 
 NOAA Coral Reef Watch. 2024. “Coral Reef Watch Daily 5km Satellite Sea
@@ -206,6 +213,15 @@ Buschmann, and Jian-Gang Fang. 2010. “Ecological Engineering in
 Aquaculture — Potential for Integrated Multi-Trophic Aquaculture (IMTA)
 in Marine Offshore Systems.” *Aquaculture* 297 (1-4): 1–9.
 <https://doi.org/10.1016/j.aquaculture.2009.09.010>.
+
+</div>
+
+<div id="ref-tidyverse" class="csl-entry">
+
+Wickham, Hadley, Mara Averick, Jennifer Bryan, Winston Chang, Lucy
+D’Agostino McGowan, Romain François, Garrett Grolemund, et al. 2019.
+“Welcome to the <span class="nocase">tidyverse</span>.” *Journal of Open
+Source Software* 4 (43): 1686. <https://doi.org/10.21105/joss.01686>.
 
 </div>
 
