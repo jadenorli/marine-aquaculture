@@ -22,44 +22,82 @@ editor_options:
 embed-resources: true
 ---
 
-
 # I. Background
 
 ## a) Motivation
 
-With the U.N. predicting that the global human population will reach approximately 9.7 billion people by the year 2050, access to basic resources (particularly food and water) will continue to become increasing pressing issues [@un_population2024]. The global assessment of the state of food security and nutrition in 2022 highlights the severity of this issue at current population levels (~8.2 billion): 
+With the U.N. predicting that the global human population will reach
+approximately 9.7 billion people by the year 2050, access to basic
+resources (particularly food and water) will continue to become
+increasing pressing issues [@un_population2024]. The global assessment
+of the state of food security and nutrition in 2022 highlights the
+severity of this issue at current population levels (\~8.2 billion):
 
-  "It is estimated that between 691 and 783 million people in the world faced hunger in 2022. Considering the midrange (about 735 million), 122 million more people faced hunger in 2022 than in 2019, before the pandemic [@fao_food_security2023]."
+"It is estimated that between 691 and 783 million people in the world
+faced hunger in 2022. Considering the midrange (about 735 million), 122
+million more people faced hunger in 2022 than in 2019, before the
+pandemic [@fao_food_security2023]."
 
-This highlights the increasingly urgent need to address the lack of global food security. As a result, marine aquaculture has become the center of research; with many notable characteristics that make it a sustainable alternative to meet the growing demands for protein sources [@hall2011; @nash2021]. Gentry et al. mapped potential locations that would be suitable for marine aquaculture around the world, and they found that global seafood demand could be met using less than 0.015% of the global ocean area [@gentry2017]. Additionally, an analysis of systems that have adopted an integrated multi-trophic aquaculture (IMTA) model show promise as a sustainable approach to open-ocean marine aquaculture [@troell2009]. 
+This highlights the increasingly urgent need to address the lack of
+global food security. As a result, marine aquaculture has become the
+center of research; with many notable characteristics that make it a
+sustainable alternative to meet the growing demands for protein sources
+[@hall2011; @nash2021]. Gentry et al. mapped potential locations that
+would be suitable for marine aquaculture around the world, and they
+found that global seafood demand could be met using less than 0.015% of
+the global ocean area [@gentry2017]. Additionally, an analysis of
+systems that have adopted an integrated multi-trophic aquaculture (IMTA)
+model show promise as a sustainable approach to open-ocean marine
+aquaculture [@troell2009].
 
-Gentry et al. identified potential locations based on human and environmental constraints. This included excluding areas; that would negatively impact the growth of bivalves (low phytoplanktonic food availability) and finfish (low dissolve oxygen),  were too expensive (too deep >200m) to anchor farms, were already allocated to other uses, or were in high-density shipping areas [@gentry2017].
+Gentry et al. identified potential locations based on human and
+environmental constraints. This included excluding areas; that would
+negatively impact the growth of bivalves (low phytoplanktonic food
+availability) and finfish (low dissolve oxygen), were too expensive (too
+deep \>200m) to anchor farms, were already allocated to other uses, or
+were in high-density shipping areas [@gentry2017].
 
-Based on this analysis, we aim to identify locations along the west coast of the U.S. that would be optimal for the establishment of a marine aquaculture farm for both oysters and various finfish species based on two environmental parameters that impact optimal growth:
+Based on this analysis, we aim to identify locations along the west
+coast of the U.S. that would be optimal for the establishment of a
+marine aquaculture farm for both oysters and various finfish species
+based on two environmental parameters that impact optimal growth:
 
-  1. range of thermal tolerance 
-  2. habitat range (based on depth)
+1.  range of thermal tolerance
+2.  habitat range (based on depth)
 
-## b) Oysters 
+## b) Oysters
 
-Research has shown that the following conditions are required for optimal oyster growth:
+Research has shown that the following conditions are required for
+optimal oyster growth:
 
-  1. sea surface temperature: 11-30°C
-  2. depth: 0-70 meters below sea level
+1.  sea surface temperature: 11-30°C
+2.  depth: 0-70 meters below sea level
 
 ## c) Potential Finfish Species {#potential_finfish_species}
 
-Potential finfish species were selected based on the current commercial fishes managed by the NOAA West Coast operation [@noaa_west_coast]. Highly migratory species (such as sharks) were removed from consideration resulting in a list of 26 [potential finfish species](#load_species). We then used FishBase to compile a table of minimum temperature, maximum temperature, minimum depth, and maximum depth for each species [@fishbase2024]. If a temperature range was not explicity listed, the preferred minimum temperature and preferred maximum temperature (estimated from a model) were recorded [@froese2020]. 
-
+Potential finfish species were selected based on the current commercial
+fishes managed by the NOAA West Coast operation [@noaa_west_coast].
+Highly migratory species (such as sharks) were removed from
+consideration resulting in a list of 26 [potential finfish
+species](#load_species). We then used FishBase to compile a table of
+minimum temperature, maximum temperature, minimum depth, and maximum
+depth for each species [@fishbase2024]. If a temperature range was not
+explicity listed, the preferred minimum temperature and preferred
+maximum temperature (estimated from a model) were recorded
+[@froese2020].
 
 ## d) Workflow
 
-The first goal of this assessment, is to determine locations within the US west coast [Economic Exclusion Zones (EEZ)](#oyster_aquaculture) that would be suitable for oyster cultivation. Then a [generalizable workflow](#finfish_aquaculture) was developed to assess the suitability of the 26 potential finfish species previously identified. Finally, the [results](#results) of the analysis are provided.
+The first goal of this assessment, is to determine locations within the
+US west coast [Economic Exclusion Zones (EEZ)](#oyster_aquaculture) that
+would be suitable for oyster cultivation. Then a [generalizable
+workflow](#finfish_aquaculture) was developed to assess the suitability
+of the 26 potential finfish species previously identified. Finally, the
+[results](#results) of the analysis are provided.
 
-# II. Load Libraries 
----
+# II. Load Libraries
 
-First, load the necessary packages for this analysis: 
+First, load the necessary packages for this analysis:
 
 ```{r}
 #| warning: false
@@ -86,29 +124,35 @@ library(calecopal)
 
 ```
 
-
 # III. Define Functions {#define_functions}
----
 
-All functions used in this workflow are outlined and defined in this [section](#define_functions), and grouped into three subcategories:
+All functions used in this workflow are outlined and defined in this
+[section](#define_functions), and grouped into three subcategories:
 
-  - [a) Data Processing](#data_processing),
-  - [b) Visualization](#visualization), and
-  - [c) Analysis](#analysis).
+-   [a) Data Processing](#data_processing),
+-   [b) Visualization](#visualization), and
+-   [c) Analysis](#analysis).
 
 ## a) Data Processing {#data_processing}
 
 ### i) Identify Spatial Properties {#spatial_properties}
 
-This function can be used to create a tibble with all of the geometric properties (resolution, extent, origin, and coordiante reference system) for a list of spatial objects with the class "SpatRaster" or "sf object" (both terra and sf compatible). This is useful for comparing the spatial properties of the spatial objects in a workflow to ensure compatibility before processing begins. 
+This function can be used to create a tibble with all of the geometric
+properties (resolution, extent, origin, and coordiante reference system)
+for a list of spatial objects with the class "SpatRaster" or "sf object"
+(both terra and sf compatible). This is useful for comparing the spatial
+properties of the spatial objects in a workflow to ensure compatibility
+before processing begins.
 
 The input is:
 
-  - spatial_file_list: a list of spatial objects
- 
+-   spatial_file_list: a list of spatial objects
+
 The output is:
 
-  - spatial_properties: a tibble with a column for the name of the spatial object, the resolution, extent, origin, and coordinate reference system (crs)
+-   spatial_properties: a tibble with a column for the name of the
+    spatial object, the resolution, extent, origin, and coordinate
+    reference system (crs)
 
 ```{r}
 #| warning: false
@@ -224,19 +268,23 @@ extract_spatial_properties <- function(spatial_file_list) {
 
 ```
 
-
 ### ii) Check CRS {#check_crs}
 
-This function can be used to verify that all the spatial objects in a list (both terra and sf compatible) have a pre-defined coordinate reference system (crs). This is necessary to ensure before any map algebra can be performed. 
+This function can be used to verify that all the spatial objects in a
+list (both terra and sf compatible) have a pre-defined coordinate
+reference system (crs). This is necessary to ensure before any map
+algebra can be performed.
 
 The input is:
 
-  - obj: a list of spatial objects
-  - target_crs: a target crs that all the spatial objects in the list are compared against
- 
+-   obj: a list of spatial objects
+-   target_crs: a target crs that all the spatial objects in the list
+    are compared against
+
 The output is:
 
-  - a logical (TRUE/FALSE) if the coordinate reference system of the object matches the target crs
+-   a logical (TRUE/FALSE) if the coordinate reference system of the
+    object matches the target crs
 
 ```{r}
 #| warning: false
@@ -263,18 +311,23 @@ check_crs <- function(obj, target_crs) {
 
 ```
 
-
 ### iii) Check Spatial Properties {#check_spatial}
 
-This function can be used to check that the geometric properties (resolution, extent, origin, and crs) of two SpatRaster objects (only compatible with terra) match. This function is a modified version of the [extract_spatial_properties](#extract_spatial_properties) function. 
+This function can be used to check that the geometric properties
+(resolution, extent, origin, and crs) of two SpatRaster objects (only
+compatible with terra) match. This function is a modified version of the
+[extract_spatial_properties](#extract_spatial_properties) function.
 
 The input is:
 
-  - spatial_file_list: a list of spatial objects
- 
+-   spatial_file_list: a list of spatial objects
+
 The output is:
 
-  - spatial_properties: a tibble with a column for the name of the spatial object, the resolution, extent, origin, and coordinate reference system (crs) and each entry will say "MATCH" or "DOES NOT MATCH"
+-   spatial_properties: a tibble with a column for the name of the
+    spatial object, the resolution, extent, origin, and coordinate
+    reference system (crs) and each entry will say "MATCH" or "DOES NOT
+    MATCH"
 
 ```{r}
 #| warning: false
@@ -392,21 +445,23 @@ check_spatial_properties <- function(spatial_file_list) {
 
 ```
 
-
-## b) Visualization {#visualization} 
+## b) Visualization {#visualization}
 
 ### i) Generate Maps {#generate_maps}
 
-This function can be used to generate a map [@tmap] from a SpatRaster (only comaptible with terra rasters). In this workflow, this function is used to generate a map with the "optimal" and "not optimal" land classifications for each EEZ region for each potential finfish species. 
+This function can be used to generate a map [@tmap] from a SpatRaster
+(only comaptible with terra rasters). In this workflow, this function is
+used to generate a map with the "optimal" and "not optimal" land
+classifications for each EEZ region for each potential finfish species.
 
 The input is:
 
-  - rast_obj: a SpatRaster (1 layer)
-  - map_title: a title to be used for the map
- 
+-   rast_obj: a SpatRaster (1 layer)
+-   map_title: a title to be used for the map
+
 The output is:
 
-  - map: a tmap of the rast_obj generated for the region_name
+-   map: a tmap of the rast_obj generated for the region_name
 
 ```{r}
 #| warning: false
@@ -462,26 +517,30 @@ generate_maps <- function(rast_list, map_title){
 
 ```
 
-
 ## c) Analysis {#analysis}
 
 ### i) Identify Suitable Locations {#suitable_locations}
 
-This function can be used to reclassify the geometries in a SpatRaster (only compatible with terra) based on an optimal paramter range. It generates a new SpatRaster that has three classifications:
+This function can be used to reclassify the geometries in a SpatRaster
+(only compatible with terra) based on an optimal paramter range. It
+generates a new SpatRaster that has three classifications:
 
-  1. below range
-  2. optimal
-  3. above range
+1.  below range
+2.  optimal
+3.  above range
 
 The input is:
 
-  - raster_obj: a SpatRaster (1 layer)
-  - min_parameter: a numeric value for the minimum end of the parameter range
-  - max_paramter: a numeric value for the maximum end of the parameter range
- 
+-   raster_obj: a SpatRaster (1 layer)
+-   min_parameter: a numeric value for the minimum end of the parameter
+    range
+-   max_paramter: a numeric value for the maximum end of the parameter
+    range
+
 The output is:
 
-  - mask: a raster object that has been reclassified into the three groups and saved with the name "raster_obj + _mask"
+-   mask: a raster object that has been reclassified into the three
+    groups and saved with the name "raster_obj + \_mask"
 
 ```{r}
 #| warning: false
@@ -518,22 +577,30 @@ suitable_locations <- function(raster_obj, min_parameter, max_paramter) {
   
 ```
 
-
 ### ii) Identify Optimal Locations {#optimal_locations}
 
-This function is used to generate a new raster object from two optimized SpatRaster (only compatible with terra). This function is formated to work with SpatRasters that were generated from the previously defined [suitable_locations](#suitable_locations) function. It generates a new SpatRaster that has two classifications based on the optimal parameter range of both SpatRasters (raster_1 and raster_2):
+This function is used to generate a new raster object from two optimized
+SpatRaster (only compatible with terra). This function is formated to
+work with SpatRasters that were generated from the previously defined
+[suitable_locations](#suitable_locations) function. It generates a new
+SpatRaster that has two classifications based on the optimal parameter
+range of both SpatRasters (raster_1 and raster_2):
 
-  1. not_optimal
-  2. optimal
+1.  not_optimal
+2.  optimal
 
 The input is:
 
-  - raster_1: a SpatRaster generated with the [suitable_locations](#suitable_locations) function
-  - raster_2: a SpatRaster generated with the [suitable_locations](#suitable_locations) function
- 
+-   raster_1: a SpatRaster generated with the
+    [suitable_locations](#suitable_locations) function
+-   raster_2: a SpatRaster generated with the
+    [suitable_locations](#suitable_locations) function
+
 The output is:
 
-  - combined: a raster object that has been reclassified into the two groups based on the most conservative optimal parameter of both SpatRasters
+-   combined: a raster object that has been reclassified into the two
+    groups based on the most conservative optimal parameter of both
+    SpatRasters
 
 ```{r}
 #| warning: false
@@ -566,23 +633,31 @@ optimal_locations <- function(raster_1, raster_2){
 
 ```
 
-
 ### iii) Rasterize Geometries {#rasterize_geometries}
 
-This function is used to rasterize the individual geometries in a sf object based on the name of a column in the dataframe. In this workflow, this was used to rasterize the region geometries from the EEZ dataframe. 
+This function is used to rasterize the individual geometries in a sf
+object based on the name of a column in the dataframe. In this workflow,
+this was used to rasterize the region geometries from the EEZ dataframe.
 
 The input is:
 
-  - df: an sf object that has an name_column with corresponding geometries
-  - template_raster: a SpatRaster that has the geometric properties compatible with other SpatRasters in the workflow
-  - name_column: the name of the column in the df that will correspond to a new raster object being generated from the corresponding geometry
- 
+-   df: an sf object that has an name_column with corresponding
+    geometries
+-   template_raster: a SpatRaster that has the geometric properties
+    compatible with other SpatRasters in the workflow
+-   name_column: the name of the column in the df that will correspond
+    to a new raster object being generated from the corresponding
+    geometry
+
 The output is:
 
-  - a list with 3 sublists inside:
-    1. rast_list: a list with SpatRasters that are generated for each of the names in the name_column of the df
-    2. rast_stack: a stack of all the SpatRasters that are generated and stored in the rast_list
-    3. bbox_list: a list with boundary boxes for each of the names in the name_column of the df 
+-   a list with 3 sublists inside:
+    1.  rast_list: a list with SpatRasters that are generated for each
+        of the names in the name_column of the df
+    2.  rast_stack: a stack of all the SpatRasters that are generated
+        and stored in the rast_list
+    3.  bbox_list: a list with boundary boxes for each of the names in
+        the name_column of the df
 
 ```{r}
 #| warning: false
@@ -646,23 +721,34 @@ rasterize_geometries <- function(df, template_raster, name_column) {
 
 ```
 
-
 ### iv) Extract Regions {#extract_regions}
 
-This function is used to create a mask of a SpatRaster (only compatible with terra) for each layer in a SpatRaster stack. It will then also generate a map for each of the masked layers generated. This function is a modified version of the [rasterize_geometries](#rasterize_geometries) function. In this workflow, this function is used to create a masked SpatRaster for each region in the EEZ with the input raster (raster_obj_input) being the SpatRaster generated for each potential species. The function also CONTAINS the [generate_maps](#generate_maps) function to create the maps for each layer. 
+This function is used to create a mask of a SpatRaster (only compatible
+with terra) for each layer in a SpatRaster stack. It will then also
+generate a map for each of the masked layers generated. This function is
+a modified version of the [rasterize_geometries](#rasterize_geometries)
+function. In this workflow, this function is used to create a masked
+SpatRaster for each region in the EEZ with the input raster
+(raster_obj_input) being the SpatRaster generated for each potential
+species. The function also CONTAINS the [generate_maps](#generate_maps)
+function to create the maps for each layer.
 
 The input is:
 
-  - raster_obj_input: a SpatRaster object that is to be masked
-  - rast_stack_input: a SpatRaster stack that contains layers that will be used to mask the raster_obj_input
-  - map_name_list: a list of titles to be used for the maps generated 
- 
+-   raster_obj_input: a SpatRaster object that is to be masked
+-   rast_stack_input: a SpatRaster stack that contains layers that will
+    be used to mask the raster_obj_input
+-   map_name_list: a list of titles to be used for the maps generated
+
 The output is:
 
-  - a list with 3 sublists inside:
-    1. rast_list: a list with masked SpatRasters that are generated for each of the layers in the rast_stack_input
-    2. rast_stack: a stack of all the SpatRasters that are generated and stored in the rast_list
-    3. map: the map created for the SpatRaster object (raster_obj_input)
+-   a list with 3 sublists inside:
+    1.  rast_list: a list with masked SpatRasters that are generated for
+        each of the layers in the rast_stack_input
+    2.  rast_stack: a stack of all the SpatRasters that are generated
+        and stored in the rast_list
+    3.  map: the map created for the SpatRaster object
+        (raster_obj_input)
 
 ```{r}
 #| warning: false
@@ -714,18 +800,29 @@ extract_regions <- function(raster_obj_input, rast_stack_input, map_name_list) {
   
 ```
 
-
 ### v) Rank Regions {#rank_regions}
 
-This function is used to create a tibble that ranks the regional SpatRasters (only compatible with terra) generated for each of the species using the previously defined functions. The regions are ranked based on the percent of the total area that is classified as optimal for cultivation. In this workflow, this function ranks the regions from 1 (best EEZ region for cultivation) to 5 (worst EEZ region for cultivation) based on a calculated optimal percent_cover. 
+This function is used to create a tibble that ranks the regional
+SpatRasters (only compatible with terra) generated for each of the
+species using the previously defined functions. The regions are ranked
+based on the percent of the total area that is classified as optimal for
+cultivation. In this workflow, this function ranks the regions from 1
+(best EEZ region for cultivation) to 5 (worst EEZ region for
+cultivation) based on a calculated optimal percent_cover.
 
 The input is:
 
-  - rast_stack: a SpatRaster stack that contains an EEZ region in each layer that has the classifications of "optimal" or "not_optimal"
- 
+-   rast_stack: a SpatRaster stack that contains an EEZ region in each
+    layer that has the classifications of "optimal" or "not_optimal"
+
 The output is:
 
-  - region_rank: a tibble with a column for the scientific name of the species, the EEZ region, the optimal area in that region for that species, the total area in that region for that species, the optimal percent cover in that region for that species, and the rank of that region for that species. It includes all 26 potential finfish species
+-   region_rank: a tibble with a column for the scientific name of the
+    species, the EEZ region, the optimal area in that region for that
+    species, the total area in that region for that species, the optimal
+    percent cover in that region for that species, and the rank of that
+    region for that species. It includes all 26 potential finfish
+    species
 
 ```{r}
 #| warning: false
@@ -787,30 +884,51 @@ rank_regions <- function(rast_stack){
 
 ```
 
-
 # IV. Set Up {#set_up}
----
 
-This [section](#set_up) sets up the filepaths and files for later analysis:
+This [section](#set_up) sets up the filepaths and files for later
+analysis:
 
-  - [a) Define File Paths](#file_paths),
-  - [b) Load Spatial Data](#spatial_data), and
-  - [c) Examine Geometric Properties](#examine_geometric_properties).
-
+-   [a) Define File Paths](#file_paths),
+-   [b) Load Spatial Data](#spatial_data), and
+-   [c) Examine Geometric Properties](#examine_geometric_properties).
 
 ## a) Define File Paths {#file_paths}
-Then, define the file paths for the inputs (1. sea surface temperature, 2. bathymetry, 3. economic exclusion zone data, 4. potential species) and the output figures (1. maps, 2. tables, and 3. heatmap): 
+
+Then, define the file paths for the inputs (1. sea surface temperature,
+2. bathymetry, 3. economic exclusion zone data, 4. potential species)
+and the output figures (1. maps, 2. tables, and 3. heatmap):
 
 ### i) Input Data {#input_file_paths}
 
-  1. Sea Surface Temperature (SST):
-    - To characterize the average sea surface temperature inside the region of interest, we obtained average annual sea surface temperature data for the years 2008 to 2012.
-    - This data was generated by the [NOAA Coral Reef Watch Daily 5km Satellite Sea Surface Temperature (SST) (v3.1)](https://coralreefwatch.noaa.gov/product/5km/index_5km_sst.php).
-  2. Bathymetry: 
-    - To characterize the depth profile inside the region of interest, we obtained bathymetry data from the [General Bathymetric Chart of the Oceans (GEBCO)](https://www.gebco.net/data_and_products/gridded_bathymetry_data/#area).
-  3. Economic Exclusion Zone (EEZ):
-    - To define the area of U.S. waters that could potential be regions of interest for a marine aquaculture operation, we obtained a shapefile outlining the economic exclusion zones (EEZ) along the west coast of the U.S.
-    - This data was developed by the [Flanders Marine Institute](https://www.marineregions.org/eez.php). 
+1.  Sea Surface Temperature (SST):
+
+    \- To characterize the average sea surface temperature inside the
+    region of interest, we obtained average annual sea surface
+    temperature data for the years 2008 to 2012.
+
+    \- This data was generated by the [NOAA Coral Reef Watch Daily 5km
+    Satellite Sea Surface Temperature (SST)
+    (v3.1)](https://coralreefwatch.noaa.gov/product/5km/index_5km_sst.php)
+    (@noaa_crw_sst_2024).
+
+2.  Bathymetry:
+
+    \- To characterize the depth profile inside the region of interest,
+    we obtained bathymetry data from the [General Bathymetric Chart of
+    the Oceans
+    (GEBCO)](https://www.gebco.net/data_and_products/gridded_bathymetry_data/#area)
+    (@gebco2024).
+
+3.  Economic Exclusion Zone (EEZ):
+
+    \- To define the area of U.S. waters that could potential be regions
+    of interest for a marine aquaculture operation, we obtained a
+    shapefile outlining the economic exclusion zones (EEZ) along the
+    west coast of the U.S.
+
+    \- This data was developed by the [Flanders Marine
+    Institute](https://www.marineregions.org/eez.php) (@flanders2024).
 
 ```{r}
 #| warning: false
@@ -833,7 +951,6 @@ species_file <- here::here("data", "potential_finfish_species.csv")
 
 ```
 
-
 ### ii) Output Data {#output_file_paths}
 
 ```{r}
@@ -852,14 +969,15 @@ heatmap_folder <- here::here("figures", "heatmap")
 
 ```
 
-
 ## b) Load Spatial Data {#spatial_data}
 
-Now that we have defined the file paths, we can read in the necessary spatial data:
+Now that we have defined the file paths, we can read in the necessary
+spatial data:
 
-1. Sea Surface Temperature (SST):
+1.  Sea Surface Temperature (SST):
 
-  - The sea surface temperature image files were read in as a [SpatRaster stack]() containing a layer for each year. 
+-   The sea surface temperature image files were read in as a
+    [SpatRaster stack]() containing a layer for each year.
 
 ```{r}
 #| warning: false
@@ -881,9 +999,10 @@ for (i in seq_along(names(sst_rasters))) {
 
 ```
 
-2. Bathymetry: 
+2.  Bathymetry:
 
-  - The bathmetry image file was read in as a SpatRaster with [@terra] containing a depth layer.
+-   The bathmetry image file was read in as a SpatRaster with [@terra]
+    containing a depth layer.
 
 ```{r}
 #| warning: false
@@ -898,9 +1017,12 @@ names(depth_raster) <- "depth"
 
 ```
 
-3. Economic Exclusion Zone (EEZ):
+3.  Economic Exclusion Zone (EEZ):
 
-  - The polygons for the economic exclusion zones were read in as an sf object with [@sf] and the data frame was cleaned with to only contain the regions and the corresponding total area (km^2) while remaining sticky.  
+-   The polygons for the economic exclusion zones were read in as an sf
+    object with [@sf] and the data frame was cleaned with to only
+    contain the regions and the corresponding total area (km\^2) while
+    remaining sticky.
 
 ```{r}
 #| warning: false
@@ -937,14 +1059,18 @@ eez <- eez %>%
 
 ```
 
-
 ## c) Examine Geometric Properties {#examine_geometric_properties}
 
-Next, we need to examine the geometric properties (resolution, extent, origin, and coordinate reference system (crs)) for each of the spatial objects that we are working with. We will need to transform any spatial objects that have mismatched properties.
+Next, we need to examine the geometric properties (resolution, extent,
+origin, and coordinate reference system (crs)) for each of the spatial
+objects that we are working with. We will need to transform any spatial
+objects that have mismatched properties.
 
-### i) Identify Properties 
+### i) Identify Properties
 
-We will start by identifying the geometric properties of each of the spatial objects with the [extract_spatial_properties](#spatial_properties) function:
+We will start by identifying the geometric properties of each of the
+spatial objects with the
+[extract_spatial_properties](#spatial_properties) function:
 
 ```{r}
 #| warning: false
@@ -980,12 +1106,15 @@ spatial_properties_kable
 
 ```
 
-
-It appears that the coordiante reference system for the bathymetry data (depth_raster) and the economic exclusion zone data (eez) does not match that of the sea surface temperature data (sst_rasters).
+It appears that the coordiante reference system for the bathymetry data
+(depth_raster) and the economic exclusion zone data (eez) does not match
+that of the sea surface temperature data (sst_rasters).
 
 ### ii) Transform Coordinate Reference Systems
 
-Therefore, we will transform the bathymetry data (depth_raster) and the economic exclusion zone data (eez) to match the coordinate reference system (crs = EPSG:9122) of sea surface temperature data (sst_rasters).
+Therefore, we will transform the bathymetry data (depth_raster) and the
+economic exclusion zone data (eez) to match the coordinate reference
+system (crs = EPSG:9122) of sea surface temperature data (sst_rasters).
 
 ```{r}
 #| warning: false
@@ -1008,10 +1137,11 @@ spatial_file_list <- list(sst_rasters = sst_rasters,
 
 ```
 
+### iii) Verify CRS Match
 
-### iii) Verify CRS Match 
-
-Now verify that all of the spatial files have the same coordinate reference system with the [check_crs](#check_crs) function before continuing with analysis:
+Now verify that all of the spatial files have the same coordinate
+reference system with the [check_crs](#check_crs) function before
+continuing with analysis:
 
 ```{r}
 #| warning: false
@@ -1036,26 +1166,29 @@ if (all(all_crs_match)) {
 
 ```
 
-Since all the spatial files have the same coordinate reference system, we can move to the analysis process. 
-
+Since all the spatial files have the same coordinate reference system,
+we can move to the analysis process.
 
 # V. Oyster Aquaculture {#oyster_aquaculture}
----
 
-This [section](#oyster_aquaculture) identifies locations that would be suitable for only bivalve farming:
+This [section](#oyster_aquaculture) identifies locations that would be
+suitable for only bivalve farming:
 
-  - [a) SST and Bathymetry Data](#sst_bath_data),
-  - [b) Determine Suitable Oyster Cultivation Locations](#oyster_range), and 
-  - [c) Visualize Suitable Locations](#oyster_locations).
-
+-   [a) SST and Bathymetry Data](#sst_bath_data),
+-   [b) Determine Suitable Oyster Cultivation Locations](#oyster_range),
+    and
+-   [c) Visualize Suitable Locations](#oyster_locations).
 
 ## a) SST and Bathymetry Data {#sst_bath_data}
 
-To start, we will ensure that the sea surface temperature (SST) and the bathymetry data are compatible to process together
+To start, we will ensure that the sea surface temperature (SST) and the
+bathymetry data are compatible to process together
 
 ### i) Transform SST Data
 
-First, we need to calculate the average sea surface temperature by taking the mean across all of the rasters (from the years 2008 to 2012), and then convert this temperature from Kelvin to Celsius.
+First, we need to calculate the average sea surface temperature by
+taking the mean across all of the rasters (from the years 2008 to 2012),
+and then convert this temperature from Kelvin to Celsius.
 
 ```{r}
 #| warning: false
@@ -1073,10 +1206,11 @@ names(sst_mean_celsius) <- "mean_sst_c"
 
 ```
 
-
 ### ii) Identify Geometric Properties
 
-Now we need to verify that the rasters are compatible to be combined. We will start by identifying the geometric properties of with the [extract_spatial_properties](#spatial_properties) function:
+Now we need to verify that the rasters are compatible to be combined. We
+will start by identifying the geometric properties of with the
+[extract_spatial_properties](#spatial_properties) function:
 
 ```{r}
 #| warning: false
@@ -1111,11 +1245,17 @@ spatial_properties_kable_sst_bath
 
 ```
 
-It appears that the rasters have the same coordinate reference systems (since we transformed them to match above), but differ in their resolution, extent, and origin.
+It appears that the rasters have the same coordinate reference systems
+(since we transformed them to match above), but differ in their
+resolution, extent, and origin.
 
 ### iii) Match Resolution, Extent, and Origin
 
-To ensure compatible geometric properties we will transform the data so both raster have the same resolution, extent, origin, and coordinate reference system. Since the bathymetry data has a larger extent than the sea surface temperature, we can crop this raster to match the extent and origin of the temperature raster.
+To ensure compatible geometric properties we will transform the data so
+both raster have the same resolution, extent, origin, and coordinate
+reference system. Since the bathymetry data has a larger extent than the
+sea surface temperature, we can crop this raster to match the extent and
+origin of the temperature raster.
 
 ```{r}
 #| warning: false
@@ -1127,8 +1267,9 @@ depth_raster_crop <- terra::crop(depth_raster, sst_mean_celsius)
 
 ```
 
-
-Since the bathymetry data has a finer resolution than the sea surface temperature (SST) data, we will coarsen the bathymetry data by resampling the data using the nearest neighbor approach. 
+Since the bathymetry data has a finer resolution than the sea surface
+temperature (SST) data, we will coarsen the bathymetry data by
+resampling the data using the nearest neighbor approach.
 
 ```{r}
 #| warning: false
@@ -1140,11 +1281,14 @@ depth_resampled <- terra::resample(depth_raster_crop, sst_mean_celsius, method =
 
 ```
 
-Now we will verify that the transformations were successful and the resulting rasters have compatible geometric properties.
+Now we will verify that the transformations were successful and the
+resulting rasters have compatible geometric properties.
 
 ### iv) Identify Geometric Properties
 
-Now we need to verify that the rasters are compatible to be combined by ensuring the geometric properties have been succesfully transformed with the [check_spatial_properties](#check_spatial) function:
+Now we need to verify that the rasters are compatible to be combined by
+ensuring the geometric properties have been succesfully transformed with
+the [check_spatial_properties](#check_spatial) function:
 
 ```{r}
 #| warning: false
@@ -1179,15 +1323,24 @@ spatial_properties_kable_sst_bath_transform
 
 ```
 
-Since the transformations were successful, we can move forward with identifying suitable locations for oyster cultivation along the west coast.
+Since the transformations were successful, we can move forward with
+identifying suitable locations for oyster cultivation along the west
+coast.
 
 ## b) Determine Suitable Oyster Cultivation Locations {#oyster_range}
 
-Before we can identify potential finfish species that will be suitable options for marine aquaculture, we need to determine which locations are within the scope of the temperature and depth parameters for oysters. 
+Before we can identify potential finfish species that will be suitable
+options for marine aquaculture, we need to determine which locations are
+within the scope of the temperature and depth parameters for oysters.
 
 ### i) Temperature Conditions
 
-To start, we will classify locations as "optimal" or "not optimal" for oyster cultivation based on the [average sea surface temperature](#sst_bath_data) calculated above. This is done by creating a mask of the average sea surface temperature data (mean_sst_celcius) and assigning appropriate categorical levels using the [suitable_locations](#suitable_locations) function: 
+To start, we will classify locations as "optimal" or "not optimal" for
+oyster cultivation based on the [average sea surface
+temperature](#sst_bath_data) calculated above. This is done by creating
+a mask of the average sea surface temperature data (mean_sst_celcius)
+and assigning appropriate categorical levels using the
+[suitable_locations](#suitable_locations) function:
 
 ```{r}
 #| warning: false
@@ -1205,10 +1358,13 @@ sst_mask <- suitable_locations(sst_mean_celsius, min_temp, max_temp)
 
 ```
 
-
 ### ii) Depth Conditions
 
-Now we classified locations as "optimal", "not optimal", or "land" for oyster cultivation based on the [bathymetry data](#sst_bath_data) processed above. This is done by creating a mask of the bathymetry data (depth_resampled) and assigning appropriate categorical levels using the [suitable_locations](#suitable_locations) function: 
+Now we classified locations as "optimal", "not optimal", or "land" for
+oyster cultivation based on the [bathymetry data](#sst_bath_data)
+processed above. This is done by creating a mask of the bathymetry data
+(depth_resampled) and assigning appropriate categorical levels using the
+[suitable_locations](#suitable_locations) function:
 
 ```{r}
 #| warning: false
@@ -1230,10 +1386,13 @@ levels(depth_mask) <- data.frame(id = c(1, 2, 3),
 
 ```
 
-
 ### iii) Combine Optimal Conditions
 
-Once the physical condition rasters have been reclassified, we can combine the reclassified rasters (sst_mask and depth_mask) into a single raster that contains the optimal locations for oyster cultivation based on both parameters using the [optimal_locations](#optimal_locations) function:
+Once the physical condition rasters have been reclassified, we can
+combine the reclassified rasters (sst_mask and depth_mask) into a single
+raster that contains the optimal locations for oyster cultivation based
+on both parameters using the [optimal_locations](#optimal_locations)
+function:
 
 ```{r}
 #| warning: false
@@ -1245,10 +1404,17 @@ oyster_range <- optimal_locations(sst_mask, depth_mask)
 
 ```
 
+### iv) Overlay Economic Exclusion Zones
 
-### iv) Overlay Economic Exclusion Zones 
-
-After generating a raster with the optimal location for oyster cultivation, we can overlay the economic exclusion zones (eez) data. Before combining this information, we must rasterize the eez data to make it compatible with the other SpatRaster objects. We will create an individual raster object for each region (Southern California, Central California, Northern California, Oregon, and Washington) of the economic exclusion zones as well as a raster stack which contains each region as a layer using the [rasterize_geometries](#rasterize_geometries) function: 
+After generating a raster with the optimal location for oyster
+cultivation, we can overlay the economic exclusion zones (eez) data.
+Before combining this information, we must rasterize the eez data to
+make it compatible with the other SpatRaster objects. We will create an
+individual raster object for each region (Southern California, Central
+California, Northern California, Oregon, and Washington) of the economic
+exclusion zones as well as a raster stack which contains each region as
+a layer using the [rasterize_geometries](#rasterize_geometries)
+function:
 
 ```{r}
 #| warning: false
@@ -1269,10 +1435,12 @@ eez_bbox_list <- eez_results$bbox_list
 
 ```
 
-
 ## c) Visualize Suitable Locations {#oyster_locations}
 
-Now we can visualize the suitable locations for oyster cultivation in each region of the economic exclusion zone along the west coast of the U.S. Let's start by making a color palette to visualize each of the regions within the west coast EEZ.
+Now we can visualize the suitable locations for oyster cultivation in
+each region of the economic exclusion zone along the west coast of the
+U.S. Let's start by making a color palette to visualize each of the
+regions within the west coast EEZ.
 
 ```{r}
 #| warning: false
@@ -1298,8 +1466,8 @@ eez_color <- eez_caps %>%
 
 ```
 
-
-Now we can create an interactive map to visualize the optimal locations for oyster cultivation within each EEZ region:
+Now we can create an interactive map to visualize the optimal locations
+for oyster cultivation within each EEZ region:
 
 ```{r}
 #| warning: false
@@ -1344,18 +1512,19 @@ oyster_range_map
 
 ```
 
-
 # VI. Potential Finfish Aquaculture {#finfish_aquaculture}
----
 
-This [section](#finfish_aquaculture) identifies locations that would be suitable for BOTH bivalve and finfish aquaculture:
+This [section](#finfish_aquaculture) identifies locations that would be
+suitable for BOTH bivalve and finfish aquaculture:
 
-  - [a) Load Species Data](#load_species) and 
-  - [b) Identify Potential Compatible Species](#potential_species). 
+-   [a) Load Species Data](#load_species) and
+-   [b) Identify Potential Compatible Species](#potential_species).
 
 ## a) Load Species Data {#load_species}
 
-Start by loading in the csv with the metadata for the 26 potential finfish species identified in the [background section](#potential_species):
+Start by loading in the csv with the metadata for the 26 potential
+finfish species identified in the [background
+section](#potential_species):
 
 ```{r}
 #| warning: false
@@ -1390,8 +1559,8 @@ potential_species <- potential_species %>%
 
 ```
 
-
-Then print out a table with a list of the potential species being considered.
+Then print out a table with a list of the potential species being
+considered.
 
 ```{r}
 #| warning: false
@@ -1420,35 +1589,60 @@ potential_species_kable
 
 ```
 
-
 ## b) Identify Potential Compatible Species {#potential_species}
 
-Now we will use the functions defined above to evaluate the compatibility of each potential finfish species in each EEZ region. For each species, we will generate a SpatRaster for each EEZ region whose area has been classified as "optimal" or "not optimal" for the cultivation of that species and oysters. We will then stack these SpatRasters to generate a SpatRaster stack for each species containing a layer for each region. Additionally we will generate a tibble which ranks each EEZ region for each potential finfish species based on the percent of optimal area in the region. Finally, we will also create a map for each region layer generated for each potential species. The functions are used in the below order:
+Now we will use the functions defined above to evaluate the
+compatibility of each potential finfish species in each EEZ region. For
+each species, we will generate a SpatRaster for each EEZ region whose
+area has been classified as "optimal" or "not optimal" for the
+cultivation of that species and oysters. We will then stack these
+SpatRasters to generate a SpatRaster stack for each species containing a
+layer for each region. Additionally we will generate a tibble which
+ranks each EEZ region for each potential finfish species based on the
+percent of optimal area in the region. Finally, we will also create a
+map for each region layer generated for each potential species. The
+functions are used in the below order:
 
-  1. [suitable_locations](#suitable_locations),
-  
-  - this function is used twice in the workflow; 
-    a) the first time is used to find the optimal location for the current species based on the temperature range, and 
-    b) the second time is used to find the optimal location for the current species based on the depth range.
-  2. [optimal_locations](#optimal_locations),
-  
-  - this function is used twice in the workflow; 
-    a) the first time is used to find the optimal location for the current species based on the depth raster and temperature raster generated, and 
-    b) the second time is used to find the optimal location for the current species AND oysters.
-  3. [extract_regions](#extract_regions), and
-  
-  - this function CONTAINS the [generate_maps](#generate_maps) function to create a map for each of the potential finfish species  
-  4. [rank_regions](#rank_regions). 
- 
-Output:
-This workflow will generate three outputs:
+1.  [suitable_locations](#suitable_locations),
 
-  1. species_rast_list: a list with 26 sublists (one for each species). Each species sublist contains two more sublists:
-    a) rast_list: a list with region specific SpatRasters that are generated for each of the EEZ Regions
-    b) rast_stack: a stack of all the SpatRasters that are generated and stored in the rast_list
-  2. region_rank:  a tibble with a column for the scientific name of the species, the EEZ region, the optimal area in that region for that species, the total area in that region for that species, the optimal percent cover in that region for that species, and the rank of that region for that species. It includes all 26 potential finfish species
-  3. species_map: a list with 26 sublists (one for each species). Each species sublist contains a map for each EEZ region with the "optimal" and "not optimal" classifications
- 
+-   this function is used twice in the workflow;
+    a)  the first time is used to find the optimal location for the
+        current species based on the temperature range, and
+    b)  the second time is used to find the optimal location for the
+        current species based on the depth range.
+
+2.  [optimal_locations](#optimal_locations),
+
+-   this function is used twice in the workflow;
+    a)  the first time is used to find the optimal location for the
+        current species based on the depth raster and temperature raster
+        generated, and
+    b)  the second time is used to find the optimal location for the
+        current species AND oysters.
+
+3.  [extract_regions](#extract_regions), and
+
+-   this function CONTAINS the [generate_maps](#generate_maps) function
+    to create a map for each of the potential finfish species\
+
+4.  [rank_regions](#rank_regions).
+
+Output: This workflow will generate three outputs:
+
+1.  species_rast_list: a list with 26 sublists (one for each species).
+    Each species sublist contains two more sublists: a) rast_list: a
+    list with region specific SpatRasters that are generated for each of
+    the EEZ Regions b) rast_stack: a stack of all the SpatRasters that
+    are generated and stored in the rast_list
+2.  region_rank: a tibble with a column for the scientific name of the
+    species, the EEZ region, the optimal area in that region for that
+    species, the total area in that region for that species, the optimal
+    percent cover in that region for that species, and the rank of that
+    region for that species. It includes all 26 potential finfish
+    species
+3.  species_map: a list with 26 sublists (one for each species). Each
+    species sublist contains a map for each EEZ region with the
+    "optimal" and "not optimal" classifications
 
 ```{r}
 #| warning: false
@@ -1593,17 +1787,19 @@ for(i in 1:nrow(potential_species_names)) {
 Now let's visualize some of the results from our analysis.
 
 # VII. Results {#results}
----
 
-This [section](#results) summarizes the results of the above analysis through a variety of visualizations:
+This [section](#results) summarizes the results of the above analysis
+through a variety of visualizations:
 
-  - [a) Potential Species Region Ranking](#species_ranks), 
-  - [b) Ideal Locations](#ideal_locations), and 
-  - [c) Example Finfish Map](#example_map). 
+-   [a) Potential Species Region Ranking](#species_ranks),
+-   [b) Ideal Locations](#ideal_locations), and
+-   [c) Example Finfish Map](#example_map).
 
 ## a) Potential Species Region Ranking {#species_ranks}
 
-First, we can generate a heatmap to determine which regions are most suitable for aquaculture farms for both oysters and the 26 potential finfish species. 
+First, we can generate a heatmap to determine which regions are most
+suitable for aquaculture farms for both oysters and the 26 potential
+finfish species.
 
 ```{r}
 #| warning: false
@@ -1672,10 +1868,10 @@ heatmap
 
 ```
 
-
 ## b) Ideal Locations {#ideal_locations}
 
-Then we can determine which regions will be the most optimal for creating farms for oyster and a finfish species:
+Then we can determine which regions will be the most optimal for
+creating farms for oyster and a finfish species:
 
 ```{r}
 #| warning: false
@@ -1711,10 +1907,12 @@ top_regions_kable
 
 ```
 
-
 ## c) Example Finfish Map {#example_map}
 
-Finally, we can examine one of the regional maps generated for a potential finfish species. We will visualize the maps generated for the *Sebastes pinniger* (Canary Rockfish) as an example of the maps created for all of the potential finfish species:
+Finally, we can examine one of the regional maps generated for a
+potential finfish species. We will visualize the maps generated for the
+*Sebastes pinniger* (Canary Rockfish) as an example of the maps created
+for all of the potential finfish species:
 
 ```{r}
 #| warning: false
@@ -1732,10 +1930,13 @@ sebastes_pinniger_map
 
 ```
 
-These results show that for all of the potential finfish species chosen, the Washington EEZ is the most suitable for paired oyster aquaculture. However, further parameters for each species should be examined more closely for potential areas with the Washington region before moving forward with development. 
+These results show that for all of the potential finfish species chosen,
+the Washington EEZ is the most suitable for paired oyster aquaculture.
+However, further parameters for each species should be examined more
+closely for potential areas with the Washington region before moving
+forward with development.
 
 # IX. Citations
----
+
 ::: {#refs}
 :::
-

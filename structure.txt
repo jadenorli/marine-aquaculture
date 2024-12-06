@@ -1,0 +1,127 @@
+.
+├── README.md
+├── bibs
+│   ├── packages.bib
+│   └── references.bib
+├── code
+│   ├── custom.css
+│   ├── marine_aquaculture.html
+│   └── marine_aquaculture.qmd
+├── data
+│   ├── average_annual_sst_2008.tif
+│   ├── average_annual_sst_2009.tif
+│   ├── average_annual_sst_2010.tif
+│   ├── average_annual_sst_2011.tif
+│   ├── average_annual_sst_2012.tif
+│   ├── depth.tif
+│   ├── potential_finfish_species.csv
+│   ├── wc_regions_clean.dbf
+│   ├── wc_regions_clean.prj
+│   ├── wc_regions_clean.shp
+│   └── wc_regions_clean.shx
+├── figures
+│   ├── heatmap
+│   │   └── species_vs_region_heatmap.png
+│   ├── maps
+│   │   ├── NULL_map.png
+│   │   ├── anoplopoma_fimbria_map.html
+│   │   ├── anoplopoma_fimbria_map.png
+│   │   ├── atheresthes_stomias_map.html
+│   │   ├── atheresthes_stomias_map.png
+│   │   ├── engraulis_mordax_map.html
+│   │   ├── engraulis_mordax_map.png
+│   │   ├── eopsetta_jordani_map.html
+│   │   ├── eopsetta_jordani_map.png
+│   │   ├── gadus_macrocephalus_map.html
+│   │   ├── gadus_macrocephalus_map.png
+│   │   ├── glyptocephalus_zachirus_map.html
+│   │   ├── glyptocephalus_zachirus_map.png
+│   │   ├── hippoglossoides_elassodon_map.html
+│   │   ├── hippoglossoides_elassodon_map.png
+│   │   ├── hippoglossus_stenolepis_map.html
+│   │   ├── hippoglossus_stenolepis_map.png
+│   │   ├── lepidopsetta_billineta_map.html
+│   │   ├── lepidopsetta_billineta_map.png
+│   │   ├── lepidopsetta_polyxystra_map.html
+│   │   ├── lepidopsetta_polyxystra_map.png
+│   │   ├── lib
+│   │   │   ├── Proj4Leaflet-1.0.1
+│   │   │   │   └── proj4leaflet.js
+│   │   │   ├── htmltools-fill-0.5.8.1
+│   │   │   │   └── fill.css
+│   │   │   ├── htmlwidgets-1.6.4
+│   │   │   │   └── htmlwidgets.js
+│   │   │   ├── jquery-3.6.0
+│   │   │   │   ├── jquery-3.6.0.js
+│   │   │   │   ├── jquery-3.6.0.min.js
+│   │   │   │   └── jquery-3.6.0.min.map
+│   │   │   ├── leaflet-1.3.1
+│   │   │   │   ├── images
+│   │   │   │   │   ├── layers-2x.png
+│   │   │   │   │   ├── layers.png
+│   │   │   │   │   ├── marker-icon-2x.png
+│   │   │   │   │   ├── marker-icon.png
+│   │   │   │   │   └── marker-shadow.png
+│   │   │   │   ├── leaflet.css
+│   │   │   │   └── leaflet.js
+│   │   │   ├── leaflet-binding-2.2.2
+│   │   │   │   └── leaflet.js
+│   │   │   ├── leaflet-graticule-0.1.0
+│   │   │   │   ├── Graticule-binding.js
+│   │   │   │   ├── L.Graticule.js
+│   │   │   │   └── Leaflet.Graticule.js
+│   │   │   ├── leaflet-providers-2.0.0
+│   │   │   │   └── leaflet-providers_2.0.0.js
+│   │   │   ├── leaflet-providers-plugin-2.2.2
+│   │   │   │   └── leaflet-providers-plugin.js
+│   │   │   ├── leafletfix-1.0.0
+│   │   │   │   └── leafletfix.css
+│   │   │   ├── proj4-2.6.2
+│   │   │   │   └── proj4.min.js
+│   │   │   └── rstudio_leaflet-1.3.1
+│   │   │       ├── images
+│   │   │       │   └── 1px.png
+│   │   │       └── rstudio_leaflet.css
+│   │   ├── merluccius_productus_map.html
+│   │   ├── merluccius_productus_map.png
+│   │   ├── microstomus_pacificus_map.html
+│   │   ├── microstomus_pacificus_map.png
+│   │   ├── oncorhynchus_gorbuscha_map.html
+│   │   ├── oncorhynchus_gorbuscha_map.png
+│   │   ├── oncorhynchus_keta_map.html
+│   │   ├── oncorhynchus_keta_map.png
+│   │   ├── oncorhynchus_kisutch_map.html
+│   │   ├── oncorhynchus_kisutch_map.png
+│   │   ├── oncorhynchus_nerka_map.html
+│   │   ├── oncorhynchus_nerka_map.png
+│   │   ├── oncorhynchus_tshawytscha_map.html
+│   │   ├── oncorhynchus_tshawytscha_map.png
+│   │   ├── ophiodon_elongatus_map.html
+│   │   ├── ophiodon_elongatus_map.png
+│   │   ├── oyster_range_map.html
+│   │   ├── parophrys_vetulus_map.html
+│   │   ├── parophrys_vetulus_map.png
+│   │   ├── sardinops_sagax_map.html
+│   │   ├── sardinops_sagax_map.png
+│   │   ├── sebastes_alutus_map.html
+│   │   ├── sebastes_alutus_map.png
+│   │   ├── sebastes_entomelas_map.html
+│   │   ├── sebastes_entomelas_map.png
+│   │   ├── sebastes_flavidus_map.html
+│   │   ├── sebastes_flavidus_map.png
+│   │   ├── sebastes_paucispinis_map.html
+│   │   ├── sebastes_paucispinis_map.png
+│   │   ├── sebastes_pinniger_map.html
+│   │   ├── sebastes_pinniger_map.png
+│   │   ├── sebastolobus_alascanus_map.html
+│   │   └── sebastolobus_alascanus_map.png
+│   └── tables
+│       ├── potential_species_kable.html
+│       ├── spatial_properties_kable.html
+│       ├── spatial_properties_kable_sst_bath.html
+│       ├── spatial_properties_kable_sst_bath_transform.html
+│       └── top_regions_kable.html
+├── marine-aquaculture.Rproj
+└── structure.txt
+
+23 directories, 102 files
