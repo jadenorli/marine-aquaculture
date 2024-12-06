@@ -17,7 +17,7 @@ This repository highlights a variety of skills and techniques including:
     - Wrangling and tidying data using (Wickham et al. 2019), (Müller
       2020), and (Firke 2023)
 
-    - Visualizations with (**ggplot2?**) and (Tennekes 2018)
+    - Visualizations with (Wickham 2016) and (Tennekes 2018)
 
     - Clear documentation and folder structures for reproducibility,
       collaboration, and modularity
@@ -213,6 +213,13 @@ Buschmann, and Jian-Gang Fang. 2010. “Ecological Engineering in
 Aquaculture — Potential for Integrated Multi-Trophic Aquaculture (IMTA)
 in Marine Offshore Systems.” *Aquaculture* 297 (1-4): 1–9.
 <https://doi.org/10.1016/j.aquaculture.2009.09.010>.
+
+</div>
+
+<div id="ref-ggplot2" class="csl-entry">
+
+Wickham, Hadley. 2016. *Ggplot2: Elegant Graphics for Data Analysis*.
+Springer-Verlag New York. <https://ggplot2.tidyverse.org>.
 
 </div>
 
