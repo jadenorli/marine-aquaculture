@@ -33,9 +33,9 @@ This repository highlights a variety of skills and techniques including:
         reproducibility and flexibility in analyses
 2.  Geospatial Analysis
     -   Handling spatial data with [@terra] and [@sf]
-    
+
     -   Generating informative interactive maps with [@tmap]
-    
+
     -   Map algebra with spatial objects within [@terra] and [@sf]
 3.  Sustainable Fisheries Science
     -   Adapting concepts from [@gentry2017] and [@troell2009] to
