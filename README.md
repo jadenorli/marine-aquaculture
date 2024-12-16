@@ -4,8 +4,10 @@ the West Coast
 
 # Contents
 
-This repository contains an analysis of potential locations within the
-Economic Exclusion Zones (EEZ) along the West Coast of the US that are
+This repository (knitted HTML linked here:
+[marine_aquaculture.html](#https://jadenorli.github.io/marine-aquaculture/code/marine_aquaculture.html))
+contains an analysis of potential locations within the Economic
+Exclusion Zones (EEZ) along the West Coast of the US that are
 potentially suitable locations for integrative multi-trophic aquaculture
 (IMTA).
 
