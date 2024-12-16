@@ -5,7 +5,7 @@ the West Coast
 # Contents
 
 This repository (knitted HTML linked here:
-[marine_aquaculture.html](https://jadenorli.github.io/marine-aquaculture/code/marine_aquaculture.html))
+<a href="https://jadenorli.github.io/marine-aquaculture/code/marine_aquaculture.html" target="_blank">marine_aquaculture</a>)
 contains an analysis of potential locations within the Economic
 Exclusion Zones (EEZ) along the West Coast of the US that are
 potentially suitable locations for integrative multi-trophic aquaculture
